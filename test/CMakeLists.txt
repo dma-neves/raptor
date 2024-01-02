@@ -1,0 +1,3 @@
+add_subdirectory(skeletons)
+add_subdirectory(collections)
+add_subdirectory(functions)
