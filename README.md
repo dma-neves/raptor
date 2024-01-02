@@ -3,11 +3,11 @@
 ## Description
 
 - A high-level C++ template library designed to ease the development of parallel programs using CUDA.
-- lmarrow's syntax and core design are taken from marrow. Simillarly to marrow, lmarrow provides a set of smart containers (vector, array, vector\<array\> and scalar) and skeletons (map, reduce, scan, filter) that can be applied to the smart containers. The containers can store data both on the GPU and CPU, and synchronize the data automatically whenever it's necessary.
-- marrow provides a function abstraction that behaves as a more flexible map skeleton, allowing one to handle multiple containers with different sizes. lmarrow also provides a function abstraction, but a less refined one which is treated independantly of the map skeleton.
+- lmarrow's syntax and core design are taken from marrow. Simillarly to marrow, lmarrow provides a set of smart containers (vector, array, vector\<array\> and scalar) and skeletons (map, reduce, scan, filter) that can be applied over the smart containers. The containers can store data both on the GPU and CPU, and synchronize automatically whenever necessary.
+- marrow provides a function primitive that behaves as a more flexible map skeleton, allowing one to handle multiple containers with different sizes. lmarrow also provides a function primitive, but a less refined one which is treated independantly of the map skeleton.
 - Contrary to marrow, lmarrow doesn't allow the composition of skeletons into a single kernel, nor does it automatically track dependencies and use streams to parallelize operations that could be performed asynchronously. In lmarrow everything is performed in a bulk-synchronous manner.
-- lmarrow was developed as a simplified and lighter weight alternative to marrow. For complex applications with many data-dependencies, potential for communication/computation overlap and complex operations over containers, marrow will have better performance. For simpler or more bulk-synchronous-oriented applications/operations, lmarrow might be enough and take advantage of less runtime overhead.
-- Internally lmarrow utilizes the CUB and thrust libraries.
+- lmarrow was developed as a simplified and lighter weight alternative to marrow. For complex applications with many data-dependencies, potential for communication/computation overlap and complex operations over containers, marrow will most likely have better performance. For simpler or more bulk-synchronous-oriented applications, lmarrow might be enough and it can take advantage of less runtime overheads.
+- Internally, besides the base CUDA primitives, lmarrow utilizes the CUB and thrust libraries.
 
 ## Saxpy Example
 
@@ -23,7 +23,7 @@ struct saxpy {
 
 int main() {
 
-	sequence_fill seq;
+    sequence_fill seq;
 
     float a = 2.0f;
     int n = 10;
