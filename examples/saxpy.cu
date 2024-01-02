@@ -1,6 +1,4 @@
-#include "lmarrow/containers/vector.hpp"
-#include "lmarrow/function.hpp"
-#include "lmarrow/skeletons/map.hpp"
+#include "lmarrow/lmarrow.hpp"
 
 using namespace lmarrow;
 
