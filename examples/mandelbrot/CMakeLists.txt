@@ -1,3 +1,5 @@
+include_directories(${LMARROW_INCLUDE_DIRS})
+
 find_package(SDL2 REQUIRED)
 
 add_executable(mandelbrot mandelbrot.cu)

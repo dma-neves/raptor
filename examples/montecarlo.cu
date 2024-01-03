@@ -11,8 +11,8 @@ struct montecarlo_fun : function_with_coordinates<montecarlo_fun> {
     __device__
     int operator()(coordinates_t tid, float* result) {
 
-        float x = lmarrow::random::random(tid);
-        float y = lmarrow::random::random(tid);
+        float x = lmarrow::random::rand(tid);
+        float y = lmarrow::random::rand(tid);
 
         result[tid] = (x * x + y * y) < 1;
     }

@@ -1,3 +1,5 @@
+include_directories(${LMARROW_INCLUDE_DIRS})
+
 set (LMARROW_FUNCTIONS_TEST_SOURCES
         functions_test.cu
         )

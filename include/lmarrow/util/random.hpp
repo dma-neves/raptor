@@ -9,7 +9,7 @@
 
 namespace lmarrow::random {
 
-    __device__ float random(int tid) {
+    __device__ float rand(int tid) {
 
         curandState state;
         curand_init((unsigned long long)clock() + tid, 0, 0, &state);

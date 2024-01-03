@@ -1,5 +1,7 @@
 add_subdirectory(mandelbrot)
 
+include_directories(${LMARROW_INCLUDE_DIRS})
+
 add_executable(saxpy saxpy.cu)
 add_executable(montecarlo montecarlo.cu)
 

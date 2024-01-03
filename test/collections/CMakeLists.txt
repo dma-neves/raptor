@@ -1,3 +1,5 @@
+include_directories(${LMARROW_INCLUDE_DIRS})
+
 set (LMARROW_COLLECTIONS_TEST_SOURCES
         array_test.cu
         vector_of_array_test.cu
