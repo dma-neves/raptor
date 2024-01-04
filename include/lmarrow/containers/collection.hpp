@@ -63,7 +63,9 @@ namespace lmarrow {
 
         virtual void download(cudaStream_t stream = 0) = 0;
 
-    //protected:
+        virtual void dirty_on_device() = 0;
+
+        //protected:
         virtual T *get_device_ptr() = 0;
 
         virtual T *get_data() = 0;

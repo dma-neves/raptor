@@ -167,6 +167,14 @@ namespace lmarrow {
             return arr.data();
         }
 
+        void dirty() {
+            host_dirty = true;
+        }
+
+        void dirty_on_device() {
+            dev_dirty = true;
+        }
+
         void upload(cudaStream_t stream = 0) {
 
             // Ensure dev allocation whenever upload is called
