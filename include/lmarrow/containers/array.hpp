@@ -12,6 +12,7 @@
 
 #include "collection.hpp"
 #include "lmarrow/cuda/dev_ptr.hpp"
+#include "lmarrow/util/fillers.hpp"
 
 namespace lmarrow {
 
@@ -43,13 +44,13 @@ namespace lmarrow {
         void fill(T &val) {
 
             std::fill(arr.begin(), arr.end(), val);
-            set_host_dirty();
+            dirty();
         }
 
         void fill(T &&val) {
 
             std::fill(arr.begin(), arr.end(), val);
-            set_host_dirty();
+            dirty();
         }
 
         void fill_on_device(T &val) {
@@ -57,8 +58,8 @@ namespace lmarrow {
             if(dev_alloc)
                 allocate_device();
 
-            fill_on_device(fill_val_fun(val));
-            dev_dirty = true;
+            fill_on_device(value_filler(val));
+            dirty_on_device();
         }
 
         void fill_on_device(T &&val) {
@@ -66,8 +67,8 @@ namespace lmarrow {
             if(dev_alloc)
                 allocate_device();
 
-            fill_on_device(fill_val_fun(val));
-            dev_dirty = 1;
+            fill_on_device(value_filler(val));
+            dirty_on_device();
         }
 
         template<typename Functor>
@@ -76,7 +77,7 @@ namespace lmarrow {
             for (int i = 0; i < N; i++)
                 arr[i] = fun(i);
 
-            set_host_dirty();
+            dirty();
         }
 
         template<typename Functor>
@@ -86,7 +87,7 @@ namespace lmarrow {
                 allocate_device();
 
             dev_fill<<<def_nb(N), def_tpb(N)>>>(get_device_ptr(), N, fun);
-            dev_dirty = true;
+            dirty_on_device();
         }
 
         T &operator[](std::size_t i) {
@@ -108,31 +109,55 @@ namespace lmarrow {
         void set(std::size_t i, T &&val) {
 
             arr[i] = val;
-            set_host_dirty();
+            dirty();
         }
 
         void set(std::size_t i, T &val) {
 
             arr[i] = val;
-            set_host_dirty();
+            dirty();
         }
 
+        bool contains(T&& val) {
+
+            download();
+            return std::find(arr.begin(), arr.end(), val) != arr.end();
+        }
+
+        bool contains(T& val) {
+
+            download();
+            return std::find(arr.begin(), arr.end(), val) != arr.end();
+        }
 
         std::size_t size() { return N; }
 
         void copy(collection<T>& col) {
 
+            this->download();
+            col.download();
             memcpy(arr.data(), col.get_data(), sizeof(T) * N);
-            set_host_dirty();
+            dirty();
         }
 
         void copy_on_device(collection<T>& col) {
 
-            if(dev_alloc)
-                allocate_device();
+            this->upload();
+            col.upload();
 
             cudaMemcpy(get_device_ptr(), col.get_device_ptr(), sizeof(T) * N, cudaMemcpyDeviceToDevice);
-            dev_dirty = 1;
+            dirty_on_device();
+        }
+
+        void dirty() {
+
+            host_dirty = true;
+            set_parent_dirty();
+        }
+
+        void dirty_on_device() {
+
+            dev_dirty = true;
         }
 
     //protected:
@@ -149,13 +174,6 @@ namespace lmarrow {
             return arr.data();
         }
 
-
-        void flag_device_dirty() {
-            dev_dirty = 1;
-        }
-
-
-
         void upload(cudaStream_t stream = 0) {
 
             if (dev_alloc) {
@@ -171,8 +189,13 @@ namespace lmarrow {
 
         void download(cudaStream_t stream = 0) {
 
-            cudaMemcpyAsync(arr.data(), get_device_ptr(), N * sizeof(T), cudaMemcpyDeviceToHost, stream);
-            dev_dirty = false;
+            if(dev_alloc) {
+                // Shouldn't happen
+            }
+            else {
+                cudaMemcpyAsync(arr.data(), get_device_ptr(), N * sizeof(T), cudaMemcpyDeviceToHost, stream);
+                dev_dirty = false;
+            }
         }
 
     private:
@@ -203,9 +226,7 @@ namespace lmarrow {
          *             - should be protected and not public
          */
 
-        void set_host_dirty() {
-
-            host_dirty = true;
+        void set_parent_dirty() {
 
             if(parent_dirty_index_callback != nullptr)
                 parent_dirty_index_callback(parent_index);

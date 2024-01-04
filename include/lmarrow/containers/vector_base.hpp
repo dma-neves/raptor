@@ -13,6 +13,7 @@
 
 #include "collection.hpp"
 #include "lmarrow/cuda/dev_ptr.hpp"
+#include "lmarrow/util/fillers.hpp"
 
 namespace lmarrow {
 
@@ -59,7 +60,7 @@ namespace lmarrow {
             vec.clear();
 
             host_dirty_elements.clear();
-            host_all_dirty = false;
+            host_dirty = false;
             dev_dirty = false;
             dev_realloc = false;
             host_realloc = false;
@@ -91,7 +92,7 @@ namespace lmarrow {
                 allocate_host();
 
             std::fill(vec.begin(), vec.end(), val);
-            host_all_dirty = true;
+            dirty();
         }
 
         void fill(T &val) {
@@ -100,7 +101,7 @@ namespace lmarrow {
                 allocate_host();
 
             std::fill(vec.begin(), vec.end(), val);
-            host_all_dirty = true;
+            dirty();
         }
 
         void fill_on_device(T &&val) {
@@ -113,12 +114,12 @@ namespace lmarrow {
                 if(val == 0)
                     cudaMemset(get_device_ptr(), 0, sizeof(T)*current_size);
                 else
-                    fill_on_device(fill_val_fun(val));
+                    fill_on_device(value_filler(val));
             }
             else {
-                fill_on_device(fill_val_fun(val));
+                fill_on_device(value_filler(val));
             }
-            dev_dirty = true;
+            dirty_on_device();
         }
 
         void fill_on_device(T &val) {
@@ -126,8 +127,8 @@ namespace lmarrow {
             if(dev_realloc)
                 allocate_device();
 
-            fill_on_device(fill_val_fun(val));
-            dev_dirty = true;
+            fill_on_device(value_filler(val));
+            dirty_on_device();
         }
 
         template<typename Functor>
@@ -138,7 +139,7 @@ namespace lmarrow {
 
             for (int i = 0; i < current_size; i++)
                 vec[i] = fun(i);
-            host_all_dirty = true;
+            dirty();
         }
 
         template<typename Functor>
@@ -148,7 +149,7 @@ namespace lmarrow {
                 allocate_device();
 
             dev_fill<<<def_nb(current_size), def_tpb(current_size)>>>(get_device_ptr(), current_size, fun);
-            dev_dirty = true;
+            dirty_on_device();
         }
 
         void push_back(T &val) {
@@ -236,46 +237,42 @@ namespace lmarrow {
 
         bool contains(T&& val) {
 
-            if(host_realloc)
-                allocate_host();
-
-            if(dev_dirty)
-                download();
-
+            download();
             return std::find(vec.begin(), vec.end(), val) != vec.end();
         }
 
         bool contains(T& val) {
 
-            if(host_realloc)
-                allocate_host();
-
-            if(dev_dirty)
-                download();
-
+            download();
             return std::find(vec.begin(), vec.end(), val) != vec.end();
         }
 
         void copy(collection<T>& col) {
 
-            if(host_realloc)
-                allocate_host();
+            this->download();
+            col.download();
 
             memcpy(vec.data(), col.get_data(), sizeof(T) * current_size);
 
-            host_all_dirty = true;
+            dirty();
         }
 
         void copy_on_device(collection<T>& col) {
 
-            if(dev_realloc)
-                allocate_device();
+            this->upload();
+            col.upload();
 
             cudaMemcpy(get_device_ptr(), col.get_device_ptr(), sizeof(T) * current_size, cudaMemcpyDeviceToDevice);
-            dev_dirty = true;
+            dirty_on_device();
         }
 
-        void flag_device_dirty() {
+        void dirty() {
+
+            host_dirty = true;
+        }
+
+        void dirty_on_device() {
+
             dev_dirty = true;
         }
 
@@ -293,35 +290,35 @@ namespace lmarrow {
 
         void upload(cudaStream_t stream = 0) {
 
-            bool dev_reallocated = false;
-
+            // Ensure dev allocation whenever upload is called
             if(dev_realloc) {
                 allocate_device();
-                dev_reallocated = true;
+                dirty(); // If device was reallocated, we need to copy all elements of host to device (consider host vector dirty)
             }
 
-            // If host needs to be reallocated, no need to allocate host memory and copy data to device, since
-            // host doesn't have any useful data
-            if(!host_realloc) {
+            
+            std::size_t n_elements_to_copy = std::min(current_size, vec.size()); // only copy elements that are already on host
+            if(host_realloc) {
+                allocate_host();
+            }
 
-                if (dev_reallocated || host_all_dirty) {
+            if (host_dirty) {
 
-                    cudaMemcpyAsync(get_device_ptr(), vec.data(), current_size * sizeof(T), cudaMemcpyHostToDevice, stream);
-                    host_dirty_elements.clear();
-                    host_all_dirty = false;
+                cudaMemcpyAsync(get_device_ptr(), vec.data(), n_elements_to_copy * sizeof(T), cudaMemcpyHostToDevice, stream);
+                host_dirty_elements.clear();
+                host_dirty = false;
+            }
+            else if (host_dirty_elements.size() > 0) {
+
+                for (auto dirty_element: host_dirty_elements) {
+
+                    T *dst = get_device_ptr() + dirty_element;
+                    T *src = &vec[dirty_element];
+                    std::size_t _size = sizeof(T);
+                    cudaMemcpyAsync(dst, src, _size, cudaMemcpyHostToDevice, stream);
                 }
-                else if (granularity == FINE && host_dirty_elements.size() > 0) { // TODO: no need to check granularity
 
-                    for (auto dirty_element: host_dirty_elements) {
-
-                        T *dst = get_device_ptr() + dirty_element;
-                        T *src = &vec[dirty_element];
-                        std::size_t _size = sizeof(T);
-                        cudaMemcpyAsync(dst, src, _size, cudaMemcpyHostToDevice, stream);
-                    }
-
-                    host_dirty_elements.clear();
-                }
+                host_dirty_elements.clear();
             }
         }
 
@@ -330,11 +327,13 @@ namespace lmarrow {
             if(host_realloc)
                 allocate_host();
 
-            // If device needs to be reallocated, no need to allocate device memory and copy data, since
-            // device doesn't yet have any useful data
-            if(!dev_realloc) {
+            if(dev_realloc) {
 
-                cudaMemcpyAsync(vec.data(), get_device_ptr(), current_size * sizeof(T), cudaMemcpyDeviceToHost, stream);
+                // what should happen? Reallocating device wipes its data ...
+            }
+            else {
+
+                cudaMemcpyAsync(vec.data(), get_device_ptr(), current_size * sizeof(T), cudaMemcpyDeviceToHost,stream);
                 dev_dirty = false;
             }
         }
@@ -350,10 +349,10 @@ namespace lmarrow {
 
             // If device will be reallocated or the whole host is marked as dirty,
             // no need to track dirty elements
-            if(!dev_realloc && !host_all_dirty) {
+            if(!dev_realloc && !host_dirty) {
 
                 if(granularity == COARSE)
-                    host_all_dirty = true;
+                    dirty();
                 else
                     host_dirty_elements.insert(i);
             }
@@ -382,7 +381,7 @@ namespace lmarrow {
         sync_granularity granularity;
         bool dev_realloc = false;
         bool host_realloc = false;
-        bool host_all_dirty = false;
+        bool host_dirty = false;
         std::set<std::size_t> host_dirty_elements;
         bool dev_dirty = false;
     };

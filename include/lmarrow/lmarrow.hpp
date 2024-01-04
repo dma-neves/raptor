@@ -15,5 +15,6 @@
 #include "lmarrow/util/random.hpp"
 #include "lmarrow/util/atomic.hpp"
 #include "lmarrow/util/math.hpp"
+#include "lmarrow/util/fillers.hpp"
 
 #endif //LMARROW_LMARROW_HPP

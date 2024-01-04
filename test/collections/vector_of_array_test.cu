@@ -83,7 +83,7 @@ TEST(GVectorOfGarray, InitAndUpdate) {
     std::size_t gvec_size = 1024;
     std::size_t garr_size = 1024;
     cv.apply(results_size, vec, results, gvec_size, garr_size, fill_fun3);
-    results.flag_device_dirty();
+    results.dirty();
 
     for(int i = 0; i < results_size; i++) {
 

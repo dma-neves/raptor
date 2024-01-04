@@ -50,7 +50,7 @@ namespace lmarrow {
         _result->upload();
 
         _result->copy_on_device(unique_col);
-       _result->flag_device_dirty();
+        _result->dirty();
         return result;
     }
 }

@@ -19,19 +19,6 @@
 
 namespace lmarrow {
 
-    template<typename T, typename Functor>
-    __global__
-    void dev_fill_flat(T *v, std::size_t size, std::size_t garr_size, Functor fun) {
-
-        int index = threadIdx.x + blockIdx.x * blockDim.x;
-
-        std::size_t gvec_index = index / garr_size;
-        std::size_t garr_index = index % garr_size;
-
-        if (index < size)
-            v[index] = fun(gvec_index, garr_index);
-    }
-
     template<typename U, std::size_t N>
     class vector<lmarrow::array<U, N>> //: public collection<array<U,N>>
     {
@@ -73,7 +60,7 @@ namespace lmarrow {
             vec.clear();
 
             host_dirty_elements.clear();
-            host_all_dirty = false;
+            host_dirty = false;
             dev_dirty = false;
             dev_realloc = false;
             host_realloc = false;
@@ -99,41 +86,13 @@ namespace lmarrow {
             dev_realloc = true;
         }
 
-        void fill(array<U, N> &val) {
-
-            if(host_realloc)
-                allocate_host();
-
-            host_all_dirty = true;
-            std::fill(vec.begin(), vec.end(), val);
-        }
-
-        void fill(array<U, N> &&val) {
-
-            if(host_realloc)
-                allocate_host();
-
-            host_all_dirty = true;
-            std::fill(vec.begin(), vec.end(), val);
-        }
-
-        void fill_on_device(array<U, N> &val) {
-
-            // TODO
-        }
-
-        void fill_on_device(array<U, N> &&val) {
-
-            // TODO
-        }
-
         template<typename Functor>
         void fill(Functor fun) {
 
             if(host_realloc)
                 allocate_host();
 
-            host_all_dirty = true;
+            host_dirty = true;
             for (int i = 0; i < current_size; i++)
                 for(int j = 0;  j < N; j++)
                     vec[i].set(j, fun(i, j));
@@ -212,7 +171,6 @@ namespace lmarrow {
 
             setup_child_array(val, i);
 
-
             if(host_realloc)
                 allocate_host();
 
@@ -237,7 +195,11 @@ namespace lmarrow {
             dirty_index(i);
         }
 
-        void flag_device_dirty() {
+        void dirty() {
+            host_dirty = true;
+        }
+
+        void dirty_on_device() {
             dev_dirty = true;
         }
 
@@ -245,45 +207,44 @@ namespace lmarrow {
 
         void upload(cudaStream_t stream = 0) {
 
-            bool dev_reallocated = false;
             if(dev_realloc) {
                 allocate_device();
-                dev_reallocated = true;
+                host_dirty = true; // If device was reallocated, we need to copy all elements of host to device
             }
 
-            // If host needs to be reallocated, no need to allocate host memory and copy data to device, since
-            // host doesn't have any useful data
-            if(!host_realloc) {
+            std::size_t n_elements_to_copy = std::min(current_size, vec.size()) * N; // only copy elements that are already on host
+            if(host_realloc) {
+                allocate_host();
+            }
 
-                if (dev_reallocated || host_all_dirty) {
+            if (host_dirty) {
 
-                    U *host_data = new U[FLAT_CURRENT_SIZE];
-                    for (int i = 0; i < current_size; i++) {
-                        U *src = vec[i].get_data();
-                        U *dst = host_data + i * N;
-                        memcpy(dst, src, N * sizeof(U));
-                    }
-
-                    std::size_t _size = sizeof(U) * FLAT_CURRENT_SIZE;
-                    cudaMemcpyAsync(get_device_ptr(), host_data, _size, cudaMemcpyHostToDevice, stream);
-
-                    delete[] host_data;
-
-                    host_dirty_elements.clear();
-                    host_all_dirty = false;
+                U *host_data = new U[n_elements_to_copy];
+                for (int i = 0; i < current_size; i++) {
+                    U *src = vec[i].get_data();
+                    U *dst = host_data + i * N;
+                    memcpy(dst, src, N * sizeof(U));
                 }
-                else if (granularity == FINE && host_dirty_elements.size() > 0) {
 
-                    for (auto dirty_element: host_dirty_elements) {
+                std::size_t _size = sizeof(U) * n_elements_to_copy;
+                cudaMemcpyAsync(get_device_ptr(), host_data, _size, cudaMemcpyHostToDevice, stream);
 
-                        U *dst = get_device_ptr() + dirty_element * N;
-                        U *src = vec[dirty_element].get_data();
-                        std::size_t _size = sizeof(U) * N;
-                        cudaMemcpyAsync(dst, src, _size, cudaMemcpyHostToDevice, stream);
-                    }
+                delete[] host_data;
 
-                    host_dirty_elements.clear();
+                host_dirty_elements.clear();
+                host_dirty = false;
+            }
+            else if (host_dirty_elements.size() > 0) {
+
+                for (auto dirty_element: host_dirty_elements) {
+
+                    U *dst = get_device_ptr() + dirty_element * N;
+                    U *src = vec[dirty_element].get_data();
+                    std::size_t _size = sizeof(U) * N;
+                    cudaMemcpyAsync(dst, src, _size, cudaMemcpyHostToDevice, stream);
                 }
+
+                host_dirty_elements.clear();
             }
         }
 
@@ -292,9 +253,10 @@ namespace lmarrow {
             if(host_realloc)
                 allocate_host();
 
-            // If device needs to be reallocated, no need to allocate device memory and copy data, since
-            // device doesn't yet have any useful data
-            if(!dev_realloc) {
+            if(dev_realloc) {
+                // what should happen? Reallocating device wipes its data ...
+            }
+            else {
 
                 U *host_data = new U[FLAT_CURRENT_SIZE];
                 std::size_t _size = sizeof(U) * FLAT_CURRENT_SIZE;
@@ -333,9 +295,9 @@ namespace lmarrow {
 
             // If device will be reallocated or the whole host is marked as dirty,
             // no need to track dirty elements
-            if(!dev_realloc && !host_all_dirty) {
+            if(!dev_realloc && !host_dirty) {
                 if(granularity == COARSE)
-                    host_all_dirty = true;
+                    host_dirty = true;
                 else
                     host_dirty_elements.insert(i);
             }
@@ -376,7 +338,7 @@ namespace lmarrow {
         sync_granularity granularity = FINE;
         bool dev_realloc = false;
         bool host_realloc = false;
-        bool host_all_dirty = false;
+        bool host_dirty = false;
         std::set<std::size_t> host_dirty_elements;
         bool dev_dirty = false;
     };

@@ -20,7 +20,6 @@ FillFunctor2 fill_fun2;
 
 TEST(GArray, InitFillHost) {
 
-    int n = 1024;
     array<int, 1024> arr;
 
     arr.fill(fill_fun2);
