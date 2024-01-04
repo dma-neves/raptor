@@ -32,7 +32,7 @@ namespace lmarrow {
         // Free temporary storage
         cudaFree(d_temp_storage);
 
-        _result->flag_device_dirty();
+        _result->dirty_on_device();
         return result;
     }
 }

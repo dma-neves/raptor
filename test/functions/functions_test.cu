@@ -31,7 +31,7 @@ TEST(FunctionTest, SaxpyWithCoordinates) {
 
     saxpy_fun_coordinates saxpy;
     saxpy.apply(n, a, x, y);
-    y.flag_device_dirty();
+    y.dirty_on_device();
 
     for(int i = 0; i < n; i++) {
         ASSERT_EQ(y[i], 2.0*4.0+3.0);

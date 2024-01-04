@@ -58,7 +58,7 @@ float pi_montecarlo_estimation(int size) {
 
     vector<float> mc_results(size);
     montecarlo.apply(size, mc_results);
-    mc_results.flag_device_dirty(); // lmarrow can't automatically detect container updates on the device
+    mc_results.dirty_on_device(); // lmarrow can't automatically detect container updates on the device
 
     scalar<float> pi = reduce<sum<float>>(mc_results);
 

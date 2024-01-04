@@ -73,9 +73,12 @@ namespace lmarrow {
 
         virtual void copy_on_device(collection<T>& col) = 0;
 
-        virtual void flag_device_dirty() = 0;
+        virtual void dirty() = 0;
 
-    //protected:
+        virtual void dirty_on_device() = 0;
+
+
+        //protected:
         virtual T *get_device_ptr() = 0;
 
         virtual T *get_data() = 0;

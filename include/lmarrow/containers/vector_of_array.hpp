@@ -237,7 +237,11 @@ namespace lmarrow {
             dirty_index(i);
         }
 
-        void flag_device_dirty() {
+        void dirty() {
+            host_all_dirty = true;
+        }
+
+        void dirty_on_device() {
             dev_dirty = true;
         }
 

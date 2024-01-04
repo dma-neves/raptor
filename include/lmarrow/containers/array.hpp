@@ -149,12 +149,13 @@ namespace lmarrow {
             return arr.data();
         }
 
-
-        void flag_device_dirty() {
-            dev_dirty = 1;
+        void dirty() {
+            host_dirty = true;
         }
 
-
+        void dirty_on_device() {
+            dev_dirty = true;
+        }
 
         void upload(cudaStream_t stream = 0) {
 
