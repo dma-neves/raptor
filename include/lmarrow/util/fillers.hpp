@@ -5,11 +5,13 @@
 #ifndef LMARROW_FILLERS_HPP
 #define LMARROW_FILLERS_HPP
 
+#include "lmarrow/function.hpp"
+
+template <typename T>
 struct counting_sequence_filler {
 
-    template <typename T>
     __device__ __host__
-    T operator()(std::size_t i) {
+    T operator()(lmarrow::coordinates_t i) {
         return (T)i;
     }
 };
@@ -22,7 +24,7 @@ struct value_filler {
     value_filler(T val) : val(val) {}
 
     __device__ __host__
-    T operator()(std::size_t i) {
+    T operator()(lmarrow::coordinates_t i) {
         return val;
     }
 };

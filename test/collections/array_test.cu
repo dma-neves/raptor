@@ -4,36 +4,30 @@
 
 #include <gtest/gtest.h>
 
-#include "lmarrow/containers/array.hpp"
+#include "lmarrow/lmarrow.hpp"
 
 using namespace lmarrow;
 
-struct FillFunctor2 {
-
-    __device__ __host__
-    int operator()(std::size_t i) {
-        return (int)i;
-    }
-};
-
-FillFunctor2 fill_fun2;
-
 TEST(GArray, InitFillHost) {
+
+    counting_sequence_filler<int> counting_sequence;
 
     array<int, 1024> arr;
 
-    arr.fill(fill_fun2);
+    arr.fill(counting_sequence);
 
     for(int i = 0 ; i < 10; i++)
-        ASSERT_EQ(arr[i], fill_fun2(i));
+        ASSERT_EQ(arr[i], counting_sequence(i));
 }
 
 TEST(GArray, InitFillDevice) {
 
+    counting_sequence_filler<int> counting_sequence;
+
     array<int, 1024> arr;
 
-    arr.fill_on_device(fill_fun2);
+    arr.fill_on_device(counting_sequence);
 
     for(int i = 0 ; i < 10; i++)
-        ASSERT_EQ(arr[i], fill_fun2(i));
+        ASSERT_EQ(arr[i], counting_sequence(i));
 }

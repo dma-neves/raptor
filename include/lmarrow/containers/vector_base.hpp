@@ -188,45 +188,26 @@ namespace lmarrow {
 
         T &operator[](std::size_t i) {
 
-            if(host_realloc)
-                allocate_host();
-
-            if(dev_dirty)
-                download();
-
+            download();
             return vec[i];
         }
 
         T &get(std::size_t i) {
 
-            if(host_realloc)
-                allocate_host();
-
-            if(dev_dirty)
-                download();
-
+            download();
             return vec[i];
         }
 
         void set(std::size_t i, T &val) {
 
-            if(host_realloc)
-                allocate_host();
-
-            if(dev_dirty)
-                download();
-
+            download();
             vec[i] = val;
             dirty_index(i);
         }
 
         void set(std::size_t i, T &&val) {
 
-            if(host_realloc)
-                allocate_host();
-
-            if(dev_dirty)
-                download();
+            download();
 
 //            vec[i] = std::forward(val);
             vec[i] = val;
@@ -296,45 +277,52 @@ namespace lmarrow {
                 dirty(); // If device was reallocated, we need to copy all elements of host to device (consider host vector dirty)
             }
 
-            
-            std::size_t n_elements_to_copy = std::min(current_size, vec.size()); // only copy elements that are already on host
-            if(host_realloc) {
-                allocate_host();
-            }
+            if(host_dirty || host_dirty_elements.size() > 0) {
 
-            if (host_dirty) {
+                std::size_t n_elements_to_copy = std::min(current_size,vec.size()); // only copy elements that are already on host
+                if (host_realloc) {
+                    allocate_host();
+                }
 
-                cudaMemcpyAsync(get_device_ptr(), vec.data(), n_elements_to_copy * sizeof(T), cudaMemcpyHostToDevice, stream);
-                host_dirty_elements.clear();
-                host_dirty = false;
-            }
-            else if (host_dirty_elements.size() > 0) {
+                if (host_dirty_elements.size() > 0) {
 
-                for (auto dirty_element: host_dirty_elements) {
+                    for (auto dirty_element: host_dirty_elements) {
 
-                    T *dst = get_device_ptr() + dirty_element;
-                    T *src = &vec[dirty_element];
-                    std::size_t _size = sizeof(T);
-                    cudaMemcpyAsync(dst, src, _size, cudaMemcpyHostToDevice, stream);
+                        if(dirty_element < n_elements_to_copy) {
+                            T *dst = get_device_ptr() + dirty_element;
+                            T *src = &vec[dirty_element];
+                            std::size_t _size = sizeof(T);
+                            cudaMemcpyAsync(dst, src, _size, cudaMemcpyHostToDevice, stream);
+                        }
+                    }
+                }
+                else {
+                    cudaMemcpyAsync(get_device_ptr(), vec.data(), n_elements_to_copy * sizeof(T),cudaMemcpyHostToDevice, stream);
                 }
 
                 host_dirty_elements.clear();
+                host_dirty = false;
             }
         }
 
         void download(cudaStream_t stream = 0) {
 
+            // Ensure host allocation whenever download is called
             if(host_realloc)
                 allocate_host();
 
-            if(dev_realloc) {
+            if(dev_dirty) {
 
-                // what should happen? Reallocating device wipes its data ...
-            }
-            else {
+                if (dev_realloc) {
 
-                cudaMemcpyAsync(vec.data(), get_device_ptr(), current_size * sizeof(T), cudaMemcpyDeviceToHost,stream);
-                dev_dirty = false;
+                    // what should happen? Reallocating device wipes its data ...
+                }
+                else {
+
+                    cudaMemcpyAsync(vec.data(), get_device_ptr(), current_size * sizeof(T), cudaMemcpyDeviceToHost,
+                                    stream);
+                    dev_dirty = false;
+                }
             }
         }
 
@@ -347,13 +335,10 @@ namespace lmarrow {
 
         void dirty_index(unsigned i) {
 
-            // If device will be reallocated or the whole host is marked as dirty,
+            // If the whole host is marked as dirty,
             // no need to track dirty elements
-            if(!dev_realloc && !host_dirty) {
-
-                if(granularity == COARSE)
-                    dirty();
-                else
+            if(!host_dirty) {
+                if(granularity == FINE)
                     host_dirty_elements.insert(i);
             }
         }

@@ -55,18 +55,14 @@ namespace lmarrow {
 
         void fill_on_device(T &val) {
 
-            if(dev_alloc)
-                allocate_device();
-
+            upload();
             fill_on_device(value_filler(val));
             dirty_on_device();
         }
 
         void fill_on_device(T &&val) {
 
-            if(dev_alloc)
-                allocate_device();
-
+            upload();
             fill_on_device(value_filler(val));
             dirty_on_device();
         }
@@ -74,6 +70,7 @@ namespace lmarrow {
         template<typename Functor>
         void fill(Functor fun) {
 
+            download();
             for (int i = 0; i < N; i++)
                 arr[i] = fun(i);
 
@@ -83,37 +80,33 @@ namespace lmarrow {
         template<typename Functor>
         void fill_on_device(Functor fun) {
 
-            if(dev_alloc)
-                allocate_device();
-
+            upload();
             dev_fill<<<def_nb(N), def_tpb(N)>>>(get_device_ptr(), N, fun);
             dirty_on_device();
         }
 
         T &operator[](std::size_t i) {
 
-            if(dev_dirty)
-                download();
-
+            download();
             return arr[i];
         }
 
         T &get(std::size_t i) {
 
-            if(dev_dirty)
-                download();
-
+            download();
             return arr[i];
         }
 
         void set(std::size_t i, T &&val) {
 
+            download();
             arr[i] = val;
             dirty();
         }
 
         void set(std::size_t i, T &val) {
 
+            download();
             arr[i] = val;
             dirty();
         }
@@ -176,24 +169,27 @@ namespace lmarrow {
 
         void upload(cudaStream_t stream = 0) {
 
+            // Ensure dev allocation whenever upload is called
             if (dev_alloc) {
                 allocate_device();
             }
 
-            if (host_dirty)
+            if (host_dirty) {
                 cudaMemcpyAsync(get_device_ptr(), arr.data(), N * sizeof(T), cudaMemcpyHostToDevice, stream);
-
-            host_dirty = false;
-
+                host_dirty = false;
+            }
         }
 
         void download(cudaStream_t stream = 0) {
 
-            if(dev_alloc) {
-                // Shouldn't happen
-            }
-            else {
-                cudaMemcpyAsync(arr.data(), get_device_ptr(), N * sizeof(T), cudaMemcpyDeviceToHost, stream);
+            if(dev_dirty) {
+
+                if (dev_alloc) {
+                    // Shouldn't happen
+                }
+                else {
+                    cudaMemcpyAsync(arr.data(), get_device_ptr(), N * sizeof(T), cudaMemcpyDeviceToHost, stream);
+                }
                 dev_dirty = false;
             }
         }
