@@ -71,13 +71,8 @@ namespace lmarrow {
         _result->upload();
 
         _map<<<def_nb(size), def_tpb(size)>>>(size, map_fun, _result->get_device_ptr(), _first_input->get_device_ptr(), forward_device_pointer(args)...);
-<<<<<<< HEAD
-        _result->dirty();
-||||||| parent of 2f6a9fc (flag_device_dirty -> dirty_on_device)
-        _result->flag_device_dirty();
-=======
+
         _result->dirty_on_device();
->>>>>>> 2f6a9fc (flag_device_dirty -> dirty_on_device)
         return result;
     }
 }

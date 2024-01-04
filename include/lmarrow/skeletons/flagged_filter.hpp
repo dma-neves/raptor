@@ -43,13 +43,7 @@ namespace lmarrow {
 
         cudaFree(d_temp_storage);
 
-<<<<<<< HEAD
-        _filtered_col->dirty();
-||||||| parent of 2f6a9fc (flag_device_dirty -> dirty_on_device)
-        _filtered_col->flag_device_dirty();
-=======
         _filtered_col->dirty_on_device();
->>>>>>> 2f6a9fc (flag_device_dirty -> dirty_on_device)
         return filtered_col;
     }
 }
