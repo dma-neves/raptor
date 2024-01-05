@@ -7,6 +7,8 @@
 
 #include "lmarrow/containers/vector.hpp"
 #include "lmarrow/containers/scalar.hpp"
+#include "lmarrow/containers/array.hpp"
+#include "lmarrow/containers/fill.hpp"
 #include "lmarrow/function.hpp"
 #include "lmarrow/skeletons/map.hpp"
 #include "lmarrow/skeletons/reduce.hpp"

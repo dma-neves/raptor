@@ -6,6 +6,7 @@
 #define GDGRAPH_COLLECTION_HPP
 
 #include "lmarrow/cuda/grid.hpp"
+#include "lmarrow/containers/fill.hpp"
 
 namespace lmarrow {
 
