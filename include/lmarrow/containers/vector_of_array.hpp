@@ -208,7 +208,20 @@ namespace lmarrow {
                     allocate_host();
                 }
 
-                if (host_dirty_elements.size() > 0) {
+                if(host_dirty) {
+                    U *host_data = new U[n_elements_to_copy*N];
+                    for (int i = 0; i < n_elements_to_copy; i++) {
+                        U *src = vec[i].get_data();
+                        U *dst = host_data + i * N;
+                        memcpy(dst, src, N * sizeof(U));
+                    }
+
+                    std::size_t _size = sizeof(U) * n_elements_to_copy*N;
+                    cudaMemcpyAsync(get_device_ptr(), host_data, _size, cudaMemcpyHostToDevice, stream);
+
+                    delete[] host_data;
+                }
+                else if(host_dirty_elements.size() > 0) {
 
                     for (auto dirty_element: host_dirty_elements) {
 
@@ -219,19 +232,6 @@ namespace lmarrow {
                             cudaMemcpyAsync(dst, src, _size, cudaMemcpyHostToDevice, stream);
                         }
                     }
-                }
-                else {
-                    U *host_data = new U[n_elements_to_copy*N];
-                    for (int i = 0; i < n_elements_to_copy; i++) {
-                        U *src = vec[i].get_data();
-                        U *dst = host_data + i * N;
-                        memcpy(dst, src, N * sizeof(U));
-                    }
-
-                    std::size_t _size = sizeof(U) * n_elements_to_copy;
-                    cudaMemcpyAsync(get_device_ptr(), host_data, _size, cudaMemcpyHostToDevice, stream);
-
-                    delete[] host_data;
                 }
 
                 host_dirty_elements.clear();

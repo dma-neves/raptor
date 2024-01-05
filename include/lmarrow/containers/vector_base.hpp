@@ -288,7 +288,11 @@ namespace lmarrow {
                     allocate_host();
                 }
 
-                if (host_dirty_elements.size() > 0) {
+
+                if(host_dirty) {
+                    cudaMemcpyAsync(get_device_ptr(), vec.data(), n_elements_to_copy * sizeof(T),cudaMemcpyHostToDevice, stream);
+                }
+                else if (host_dirty_elements.size() > 0) {
 
                     for (auto dirty_element: host_dirty_elements) {
 
@@ -300,9 +304,7 @@ namespace lmarrow {
                         }
                     }
                 }
-                else {
-                    cudaMemcpyAsync(get_device_ptr(), vec.data(), n_elements_to_copy * sizeof(T),cudaMemcpyHostToDevice, stream);
-                }
+                
 
                 host_dirty_elements.clear();
                 host_dirty = false;
