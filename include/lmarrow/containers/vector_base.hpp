@@ -269,15 +269,21 @@ namespace lmarrow {
 
         void upload(cudaStream_t stream = 0) {
 
+            std::size_t n_elements_to_copy = std::min(current_size,vec.size()); // only copy elements that are already on host
+
             // Ensure dev allocation whenever upload is called
             if(dev_realloc) {
                 allocate_device();
-                dirty(); // If device was reallocated, we need to copy all elements of host to device (consider host vector dirty)
+
+                // When we reallocate the device its data is whiped
+                // and we must consider all elements on host dirty.
+                // But actually only if the host has any usefull data to copy
+                if(n_elements_to_copy > 0)
+                    dirty();
             }
 
             if(host_dirty || host_dirty_elements.size() > 0) {
 
-                std::size_t n_elements_to_copy = std::min(current_size,vec.size()); // only copy elements that are already on host
                 if (host_realloc) {
                     allocate_host();
                 }

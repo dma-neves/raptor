@@ -93,10 +93,11 @@ namespace lmarrow {
             if(host_realloc)
                 allocate_host();
 
-            host_dirty = true;
             for (int i = 0; i < current_size; i++)
                 for(int j = 0;  j < N; j++)
                     vec[i].set(j, fun(i, j));
+
+            dirty();
         }
 
         template<typename Functor>
@@ -107,6 +108,8 @@ namespace lmarrow {
 
             dev_fill_flat<<<def_nb(FLAT_CURRENT_SIZE), def_tpb(FLAT_CURRENT_SIZE)>>>(get_device_ptr(), FLAT_CURRENT_SIZE, N, fun);
             dev_dirty = true;
+
+            dirty_on_device();
         }
 
         void push_back(array<U, N> &val) {
@@ -186,15 +189,21 @@ namespace lmarrow {
 
         void upload(cudaStream_t stream = 0) {
 
+            std::size_t n_elements_to_copy = std::min(current_size, vec.size()); // only copy elements that are already on host
+
             // Ensure dev allocation whenever upload is called
             if(dev_realloc) {
                 allocate_device();
-                dirty(); // If device was reallocated, we need to copy all elements of host to device (consider host vector dirty)
+
+                // When we reallocate the device its data is whiped
+                // and we must consider all elements on host dirty.
+                // But actually only if the host has any usefull data to copy
+                if(n_elements_to_copy > 0)
+                    dirty();
             }
 
             if(host_dirty || host_dirty_elements.size() > 0) {
 
-                std::size_t n_elements_to_copy = std::min(current_size, vec.size()); // only copy elements that are already on host
                 if (host_realloc) {
                     allocate_host();
                 }
@@ -278,10 +287,12 @@ namespace lmarrow {
 
         void dirty_index(std::size_t i) {
 
-            // If the whole host is marked as dirty,
+            // If device will be reallocated or the whole host is marked as dirty,
             // no need to track dirty elements
-            if(!host_dirty) {
-                if(granularity == FINE)
+            if(!dev_realloc && !host_dirty) {
+                if(granularity == COARSE)
+                    host_dirty = true;
+                else
                     host_dirty_elements.insert(i);
             }
         }
