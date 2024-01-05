@@ -2,21 +2,11 @@
 // Created by david on 15-10-2023.
 //
 
-#include "lmarrow/skeletons/map.hpp"
-#include "lmarrow/containers/vector.hpp"
+#include "lmarrow/lmarrow.hpp"
 
 #include <gtest/gtest.h>
 
 using namespace lmarrow;
-
-struct FillFunctor5 {
-
-    __device__
-    int operator()(std::size_t i) {
-        return (int)i;
-    }
-};
-
 
 struct DoubleFun {
 
@@ -37,12 +27,10 @@ struct SumFun {
 };
 
 TEST(Map, MapDouble) {
-
-    FillFunctor5 fill_fun5;
-
+    
     constexpr int size = 1024;
     vector<int> vec(size);
-    vec.fill_on_device(fill_fun5);
+    vec.fill_on_device(counting_sequence_filler<int>());
 
     vector<int> map_result = lmarrow::map<DoubleFun>(vec);
 
@@ -54,15 +42,14 @@ TEST(Map, MapDouble) {
 
 TEST(Map, MapSum) {
 
-    FillFunctor5 fill_fun5;
     SumFun sum_fun;
 
     constexpr int size = 1024;
     vector<int> a(size);
-    a.fill_on_device(fill_fun5);
+    a.fill_on_device(counting_sequence_filler<int>());
 
     vector<int> b(size);
-    b.fill_on_device(fill_fun5);
+    b.fill_on_device(counting_sequence_filler<int>());
 
     vector<int> map_result = lmarrow::map<SumFun>(a, b);
 

@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "lmarrow/containers/vector.hpp"
+#include "lmarrow/lmarrow.hpp"
 
 using namespace lmarrow;
 

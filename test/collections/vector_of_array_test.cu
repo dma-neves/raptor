@@ -4,16 +4,13 @@
 
 #include <gtest/gtest.h>
 
-#include "lmarrow/containers/vector.hpp"
-#include "lmarrow/containers/array.hpp"
-#include "lmarrow/function.hpp"
+#include "lmarrow/lmarrow.hpp"
 
 #define N 512
-#define TPB 512
 
 using namespace lmarrow;
 
-struct FillFunctor3 {
+struct FlatFillFunctor {
 
     __device__ __host__
     float operator()(std::size_t i, std::size_t j) {
@@ -21,14 +18,14 @@ struct FillFunctor3 {
     }
 };
 
-FillFunctor3 fill_fun3;
-
 
 TEST(GVectorOfGarray, Init) {
 
+    FlatFillFunctor flat_fill;
+
     vector<array<int, N>> vec(1024);
 
-    vec.fill_on_device(fill_fun3);
+    vec.fill_on_device(flat_fill);
 
     array<int, N>& a = vec[0];
     int& b = a[0];
@@ -36,14 +33,14 @@ TEST(GVectorOfGarray, Init) {
     for(int i = 0; i < 10; i++) {
 
         for(int j = 0; j < 10; j++)
-            ASSERT_EQ(vec[i][j], fill_fun3(i, j));
+            ASSERT_EQ(vec[i][j], flat_fill(i, j));
     }
 }
 
 struct check_values_fun : function_with_coordinates<check_values_fun> {
 
     __device__
-    void operator()(coordinates_t index, int *values, int *results, std::size_t gvec_size, std::size_t garr_size, FillFunctor3& fun) {
+    void operator()(coordinates_t index, int *values, int *results, std::size_t gvec_size, std::size_t garr_size, FlatFillFunctor& fun) {
 
         int flat_size = gvec_size * garr_size;
 
@@ -67,9 +64,12 @@ struct check_values_fun : function_with_coordinates<check_values_fun> {
 
 TEST(GVectorOfGarray, InitAndUpdate) {
 
+    FlatFillFunctor flat_fill;
+
+
     vector<array<int, N>> vec(1024);
 
-    vec.fill_on_device(fill_fun3);
+    vec.fill_on_device(flat_fill);
 
 
     vec[2].set(3,123);
@@ -81,9 +81,10 @@ TEST(GVectorOfGarray, InitAndUpdate) {
 
     check_values_fun cv;
     std::size_t gvec_size = 1024;
-    std::size_t garr_size = 1024;
-    cv.apply(results_size, vec, results, gvec_size, garr_size, fill_fun3);
+    std::size_t garr_size = N;
+    cv.apply(results_size, vec, results, gvec_size, garr_size, flat_fill);
     results.dirty_on_device();
+    results.download();
 
     for(int i = 0; i < results_size; i++) {
 

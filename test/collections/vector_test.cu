@@ -4,32 +4,22 @@
 
 #include <gtest/gtest.h>
 
-#include "lmarrow/containers/vector.hpp"
+#include "lmarrow/lmarrow.hpp"
 
 #define N 100000000
 
 using namespace lmarrow;
-
-struct FillFunctor7 {
-
-    __device__ __host__
-    int operator()(std::size_t i) {
-        return (int)(i+1);
-    }
-};
-
-FillFunctor7 fill_fun7;
 
 TEST(Vector, FillOnDevice) {
 
     constexpr int size = 1024;
 
     vector<int> vec(size);
-    vec.fill_on_device(fill_fun7);
+    vec.fill_on_device(counting_sequence_filler<int>());
 
     for(int i = 0; i < size; i++) {
 
-        ASSERT_EQ(vec[i], i+1);
+        ASSERT_EQ(vec[i], i);
     }
 }
 

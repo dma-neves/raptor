@@ -2,14 +2,6 @@
 
 using namespace lmarrow;
 
-struct sequence {
-
-    __device__
-    float operator()(std::size_t i) {
-        return (float)i;
-    }
-};
-
 struct saxpy {
 
     __device__
@@ -22,15 +14,14 @@ struct saxpy {
 
 int main() {
 
-	sequence seq;
 	int n = 10;
 
     float a = 2.0f;
     vector<float> x(n);
     vector<float> y(n);
 
-    x.fill_on_device(seq);
-    y.fill_on_device(seq);
+    x.fill_on_device(counting_sequence_filler<int>());
+    y.fill_on_device(counting_sequence_filler<int>());
 
     vector<float> res = lmarrow::map<saxpy>(x,y,a);
 

@@ -22,16 +22,13 @@ struct saxpy {
 };
 
 int main() {
-
-    sequence_fill seq;
-
+    
     float a = 2.0f;
     int n = 10;
     vector<float> x(n);
     vector<float> y(n);
-
-    x.fill_on_device(seq);
-    y.fill_on_device(seq);
+    x.fill_on_device(counting_sequence_filler<int>());
+    y.fill_on_device(counting_sequence_filler<int>());
 
     vector<float> saxpy_res = lmarrow::map<saxpy>(x,y,a);
 }

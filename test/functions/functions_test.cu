@@ -2,8 +2,7 @@
 // Created by david on 27-11-2023.
 //
 
-#include "lmarrow/containers/vector.hpp"
-#include "lmarrow/function.hpp"
+#include "lmarrow/lmarrow.hpp"
 
 #include <gtest/gtest.h>
 

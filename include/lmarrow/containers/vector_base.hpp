@@ -248,7 +248,7 @@ namespace lmarrow {
         }
 
         void dirty() {
-            host_all_dirty = true;
+            host_dirty = true;
         }
 
         void dirty_on_device() {

@@ -13,6 +13,7 @@
 #include "vector_base.hpp"
 #include "collection.hpp"
 #include "array.hpp"
+#include "fill.hpp"
 
 #define FLAT_RESERVED_SIZE reserved_size * N
 #define FLAT_CURRENT_SIZE current_size * N
@@ -89,7 +90,8 @@ namespace lmarrow {
         template<typename Functor>
         void fill(Functor fun) {
 
-            download();
+            if(host_realloc)
+                allocate_host();
 
             host_dirty = true;
             for (int i = 0; i < current_size; i++)
@@ -100,7 +102,8 @@ namespace lmarrow {
         template<typename Functor>
         void fill_on_device(Functor fun) {
 
-            upload();
+            if(dev_realloc)
+                allocate_device();
 
             dev_fill_flat<<<def_nb(FLAT_CURRENT_SIZE), def_tpb(FLAT_CURRENT_SIZE)>>>(get_device_ptr(), FLAT_CURRENT_SIZE, N, fun);
             dev_dirty = true;
@@ -172,7 +175,7 @@ namespace lmarrow {
         }
 
         void dirty() {
-            host_all_dirty = true;
+            host_dirty = true;
         }
 
         void dirty_on_device() {

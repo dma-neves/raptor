@@ -62,7 +62,9 @@ namespace lmarrow {
 
         void fill_on_device(T &&val) {
 
-            upload();
+            if(dev_alloc)
+                allocate_device();
+
             fill_on_device(value_filler(val));
             dirty_on_device();
         }
@@ -70,7 +72,6 @@ namespace lmarrow {
         template<typename Functor>
         void fill(Functor fun) {
 
-            download();
             for (int i = 0; i < N; i++)
                 arr[i] = fun(i);
 
@@ -80,7 +81,9 @@ namespace lmarrow {
         template<typename Functor>
         void fill_on_device(Functor fun) {
 
-            upload();
+            if(dev_alloc)
+                allocate_device();
+
             dev_fill<<<def_nb(N), def_tpb(N)>>>(get_device_ptr(), N, fun);
             dirty_on_device();
         }
@@ -165,14 +168,6 @@ namespace lmarrow {
                 download();
             
             return arr.data();
-        }
-
-        void dirty() {
-            host_dirty = true;
-        }
-
-        void dirty_on_device() {
-            dev_dirty = true;
         }
 
         void upload(cudaStream_t stream = 0) {

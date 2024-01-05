@@ -11,14 +11,6 @@
 
 using namespace lmarrow;
 
-struct sequence {
-
-    __device__
-    int operator()(coordinates_t i) {
-        return (int)i;
-    }
-};
-
 __device__
 inline float dot(lmarrow::math::complex<float> c) {
 
@@ -65,10 +57,8 @@ struct mandelbrot_fun {
 
 vector<int> compute_mandelbrot(int n) {
 
-    sequence seq;
-
     vector<int> indexes(n*n);
-    indexes.fill_on_device(seq);
+    indexes.fill_on_device(counting_sequence_filler<int>());
     vector<int> result = map<mandelbrot_fun>(indexes, n, n);
     return result;
 }

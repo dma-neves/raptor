@@ -14,29 +14,6 @@ namespace lmarrow {
         COARSE = 1
     };
 
-    template<typename T, typename Functor>
-    __global__
-    void dev_fill(T *v, std::size_t size, Functor fun) {
-
-        std::size_t index = threadIdx.x + blockIdx.x * blockDim.x;
-
-        if (index < size)
-            v[index] = fun(index);
-    }
-
-    template <typename T>
-    struct fill_val_fun {
-
-        T val;
-
-        fill_val_fun(T val) : val(val) {}
-
-        __device__
-        T operator()(std::size_t i) {
-            return val;
-        }
-    };
-
     template<typename T>
     class collection {
 
