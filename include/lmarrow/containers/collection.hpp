@@ -6,13 +6,35 @@
 #define GDGRAPH_COLLECTION_HPP
 
 #include "lmarrow/cuda/grid.hpp"
-#include "fill.hpp"
 
 namespace lmarrow {
 
     enum sync_granularity {
         FINE = 0,
         COARSE = 1
+    };
+
+    template<typename T, typename Functor>
+    __global__
+    void dev_fill(T *v, std::size_t size, Functor fun) {
+
+        std::size_t index = threadIdx.x + blockIdx.x * blockDim.x;
+
+        if (index < size)
+            v[index] = fun(index);
+    }
+
+    template <typename T>
+    struct fill_val_fun {
+
+        T val;
+
+        fill_val_fun(T val) : val(val) {}
+
+        __device__
+        T operator()(std::size_t i) {
+            return val;
+        }
     };
 
     template<typename T>
@@ -47,10 +69,6 @@ namespace lmarrow {
 
         virtual std::size_t size() = 0;
 
-        virtual bool contains(T& val) = 0;
-
-        virtual bool contains(T&& val) = 0;
-
         virtual void copy(collection<T>& col) = 0;
 
         virtual void copy_on_device(collection<T>& col) = 0;
@@ -59,16 +77,15 @@ namespace lmarrow {
 
         virtual void dirty_on_device() = 0;
 
-        virtual void upload(cudaStream_t stream = 0) = 0;
-
-        virtual void download(cudaStream_t stream = 0) = 0;
-
-        virtual void dirty_on_device() = 0;
 
         //protected:
         virtual T *get_device_ptr() = 0;
 
         virtual T *get_data() = 0;
+
+        virtual void upload(cudaStream_t stream = 0) = 0;
+
+        virtual void download(cudaStream_t stream = 0) = 0;
     };
 }
 

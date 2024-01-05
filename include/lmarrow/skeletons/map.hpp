@@ -71,7 +71,6 @@ namespace lmarrow {
         _result->upload();
 
         _map<<<def_nb(size), def_tpb(size)>>>(size, map_fun, _result->get_device_ptr(), _first_input->get_device_ptr(), forward_device_pointer(args)...);
-
         _result->dirty_on_device();
         return result;
     }
