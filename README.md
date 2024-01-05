@@ -10,56 +10,105 @@
 - lmarrow was developed as a simplified and lighter weight alternative to marrow. For complex applications with many data-dependencies, potential for communication/computation overlap and complex operations over containers, marrow will most likely have better performance. For simpler or more bulk-synchronous-oriented applications, lmarrow might be enough and can take advantage of less runtime overheads.
 - Internally, besides the base CUDA primitives, lmarrow utilizes the CUB and thrust libraries.
 
-## Saxpy Example
+## Requirements
+
+* [Nvidia Modern GPU](https://developer.nvidia.com/cuda-gpus) (compute capability &ge; 6.0).
+* [CUDA toolkit](https://developer.nvidia.com/cuda-toolkit) (only tested with v12).
+* Host C++ compiler with support for C++14.
+* [CMake](https://cmake.org) (v3.24 or greater).
+* Unix based OS.
+
+
+## Build and Run
+
+```bash
+mkdir build
+cd build
+cmake ..
+make
+examples/riemann_sum 0 10 1000000
+```
+
+## Riemann Sum Example
 
 ```c++
-struct saxpy {
+__device__
+static float fun(float x) { ... }
 
+struct compute_area {
     __device__
-    float operator()(float x, float y, float a) {
+    float operator() (float index, int start, float dx) {
 
-        return a*x + y;
+        float x = static_cast<float>(start) + index*dx;
+        float y = fun(x);
+        return dx * y;
     }
 };
+
+
+float riemann_sum(int start, int end, int samples) {
+
+    float dx = static_cast<float>(end - start) / static_cast<float>(samples);
+    vector<float> indexes(samples);
+    indexes.fill_on_device(counting_sequence_filler<float>());
+    vector<float> vals = map<compute_area>(indexes,start, dx);
+    scalar<float> result = reduce<sum<float>>(vals);
+    return result.get_data();
+}
 
 int main() {
-    
-    float a = 2.0f;
-    int n = 10;
-    vector<float> x(n);
-    vector<float> y(n);
-    x.fill_on_device(counting_sequence_filler<int>());
-    y.fill_on_device(counting_sequence_filler<int>());
-
-    vector<float> saxpy_res = lmarrow::map<saxpy>(x,y,a);
+    float rs = riemann_sum(0, 10, 1000000);
 }
 ```
 
-## Montecarlo Example
+## Mandelbrot Example
 
 ```c++
-struct montecarlo_fun : lmarrow::function_with_coordinates<montecarlo_fun> {
+__device__
+int inline divergence(int depth, lmarrow::math::complex<float> c0) {
+
+    lmarrow::math::complex<float> c = c0;
+    int i = 0;
+    while (i < depth && dot(c) < TOL) {
+        c = c0 + (c * c);
+        i++;
+    }
+    return i;
+}
+
+struct mandelbrot_fun {
+
+    static constexpr float center_x = -1.5f;
+    static constexpr float center_y = -1.5f;
+    static constexpr float scale_x = 3.f;
+    static constexpr float scale_y = 3.f;
 
     __device__
-    int operator()(coordinates_t tid, float* result) {
+    int operator()(int index, int width, int height) const {
 
-        float x = lmarrow::random::random(tid);
-        float y = lmarrow::random::random(tid);
+        float x = (float)(index % height);
+        float y = (float)(index / height);
 
-        result[tid] = (x * x + y * y) < 1;
+        lmarrow::math::complex<float> c0(center_x + (x / (float)width) * scale_x ,
+                                         center_y + (y / (float)height) * scale_y);
+
+        return divergence(DEPTH, c0);
     }
 };
 
-float pi_montecarlo_estimation(int size) {
+vector<int> compute_mandelbrot(int n) {
 
-    montecarlo_fun montecarlo;
+    vector<int> indexes(n*n);
+    indexes.fill_on_device(counting_sequence_filler<int>());
+    vector<int> result = map<mandelbrot_fun>(indexes, n, n);
+    return result;
+}
 
-    vector<float> mc_results(size);
-    montecarlo.apply(size, mc_results);
-    mc_results.dirty_on_device(); // lmarrow can't automatically detect container updates on the device
+int main() {
 
-    scalar<float> pi = reduce<sum<float>>(mc_results);
-
-    return pi.get_data() / (float)size * 4.f;
+    vector<int> mandelbrot = compute_mandelbrot(1000);
+    render(mandelbrot, DEPTH);
 }
 ```
+
+![alt text](other/mandelbrot.png)

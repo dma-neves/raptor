@@ -35,7 +35,7 @@ int inline divergence(int depth, lmarrow::math::complex<float> c0) {
 
 struct mandelbrot_fun {
 
-    static constexpr float center_x = -1.5f;
+    static constexpr float center_x = -2.f;
     static constexpr float center_y = -1.5f;
 
     static constexpr float scale_x = 3.f;
