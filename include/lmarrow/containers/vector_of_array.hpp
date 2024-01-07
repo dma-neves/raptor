@@ -189,6 +189,9 @@ namespace lmarrow {
 
         void upload(cudaStream_t stream = 0) {
 
+            // TODO: copy whole vector in a single cudamemcpy if the number of dirty elements
+            //  is very large (ex: more than 50% of all elements)
+
             std::size_t n_elements_to_copy = std::min(current_size, vec.size()); // only copy elements that are already on host
 
             // Ensure dev allocation whenever upload is called
@@ -223,6 +226,18 @@ namespace lmarrow {
                 }
                 else if(host_dirty_elements.size() > 0) {
 
+                    bool default_stream = (stream == 0);
+                    if(default_stream) {
+                        // If default stream is passed, create a new stream to parallelize the mem copies
+                        cudaError_t streamCreationError = cudaStreamCreate(&stream);
+                        if (streamCreationError != cudaSuccess) {
+
+                            std::cerr << "Failed to create stream during upload" << std::endl;
+                            default_stream = false;
+                            stream = 0;
+                        }
+                    }
+
                     for (auto dirty_element: host_dirty_elements) {
 
                         if(dirty_element < n_elements_to_copy) {
@@ -231,6 +246,11 @@ namespace lmarrow {
                             std::size_t _size = sizeof(U) * N;
                             cudaMemcpyAsync(dst, src, _size, cudaMemcpyHostToDevice, stream);
                         }
+                    }
+
+                    if(default_stream) {
+                        cudaStreamSynchronize(stream);
+                        cudaStreamDestroy(stream);
                     }
                 }
 

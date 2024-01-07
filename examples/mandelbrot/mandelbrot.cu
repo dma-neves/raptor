@@ -12,18 +12,12 @@
 using namespace lmarrow;
 
 __device__
-inline float dot(lmarrow::math::complex<float> c) {
-
-    return c.real() * c.real() + c.imag() * c.imag();
-}
-
-__device__
 int inline divergence(int depth, lmarrow::math::complex<float> c0) {
 
     lmarrow::math::complex<float> c = c0;
     int i = 0;
 
-    while (i < depth && dot(c) < TOL) {
+    while (i < depth && lmarrow::math::complex::dot(c) < TOL) {
 
         c = c0 + (c * c);
         i++;
