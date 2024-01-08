@@ -70,7 +70,7 @@ int inline divergence(int depth, lmarrow::math::complex<float> c0) {
 
     lmarrow::math::complex<float> c = c0;
     int i = 0;
-    while (i < depth && dot(c) < TOL) {
+    while (i < depth && c.dot() < TOL) {
         c = c0 + (c * c);
         i++;
     }

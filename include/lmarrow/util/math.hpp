@@ -43,9 +43,9 @@ namespace lmarrow::math {
         }
 
         __device__
-        static T dot(lmarrow::math::complex<T> c) {
+        T dot() {
 
-            return c.real() * c.real() + c.imag() * c.imag();
+            return this->real() * this->real() + this->imag() * this->imag();
         }
     };
 }
