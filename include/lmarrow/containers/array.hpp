@@ -227,7 +227,6 @@ namespace lmarrow {
 
         void set_parent_dirty() {
 
-            return;
             if(parent_dirty_index_callback != nullptr)
                 parent_dirty_index_callback(parent_index);
         }
