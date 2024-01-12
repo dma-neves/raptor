@@ -21,10 +21,8 @@
 namespace lmarrow {
 
     template<typename U, std::size_t N>
-    class vector<lmarrow::array<U, N>> //: public collection<array<U,N>>
+    class vector<lmarrow::array<U, N>> : public collection<array<U,N>>
     {
-
-        friend class array<U,N>;
 
     public:
 
@@ -52,14 +50,14 @@ namespace lmarrow {
 
         void free(cudaStream_t stream = 0) {
 
-            if(device_shared_ptr != nullptr) {
+            if(device_data_ptr != nullptr) {
                 if(stream != 0)
-                    device_shared_ptr.get()->freeAsync(stream);
-                device_shared_ptr = nullptr;
+                    device_data_ptr.get()->freeAsync(stream);
+                device_data_ptr = nullptr;
             }
 
-            vec.clear();
-
+            child_arrays.clear();
+            host_data.clear();
             host_dirty_elements.clear();
             host_dirty = false;
             dev_dirty = false;
@@ -70,8 +68,9 @@ namespace lmarrow {
         void resize(std::size_t size) {
 
             current_size = size;
-            if(vec.size() != size)
+            if(child_arrays.size() != size) {
                 host_realloc = true;
+            }
 
             if (size > reserved_size) {
                 reserved_size = size;
@@ -87,6 +86,35 @@ namespace lmarrow {
             dev_realloc = true;
         }
 
+        void copy(collection<array<U,N>>& col) {
+
+        }
+
+        void copy_on_device(collection<array<U,N>>& col) {
+
+            // TODO
+        }
+
+        void fill(array<U,N>& val) {
+
+            // TODO
+        }
+
+        void fill(array<U,N>&& val) {
+
+            // TODO
+        }
+
+        void fill_on_device(array<U,N>& val) {
+
+            // TODO
+        }
+
+        void fill_on_device(array<U,N>&& val) {
+
+            // TODO
+        }
+
         template<typename Functor>
         void fill(Functor fun) {
 
@@ -94,8 +122,9 @@ namespace lmarrow {
                 allocate_host();
 
             for (int i = 0; i < current_size; i++)
-                for(int j = 0;  j < N; j++)
-                    vec[i].set(j, fun(i, j));
+                for(int j = 0;  j < N; j++) {
+                    host_data[i * N + j] = fun(i,j);
+                }
 
             dirty();
         }
@@ -112,9 +141,9 @@ namespace lmarrow {
             dirty_on_device();
         }
 
-        void push_back(array<U, N> &val) {
+        void emplace_back() {
 
-            setup_child_array(val, current_size);
+            array<U,N> val;
 
             if (current_size + 1 > reserved_size) {
                 increase_capacity();
@@ -122,22 +151,41 @@ namespace lmarrow {
 
             download();
 
-            vec.push_back(val);
+            setup_child_array(val, current_size);
+
+            child_arrays.push_back(val);
+            dirty_index(current_size);
+            current_size++;
+        }
+
+        void push_back(array<U, N> &val) {
+
+            if (current_size + 1 > reserved_size) {
+                increase_capacity();
+            }
+
+            download();
+
+            setup_child_array(val, current_size);
+
+            child_arrays.push_back(val);
+            memcpy(&host_data[current_size*N], val.get_data(), sizeof(U)*N);
             dirty_index(current_size);
             current_size++;
         }
 
         void push_back(array<U, N> &&val) {
 
-            setup_child_array(val, current_size);
-
             if (current_size + 1 > reserved_size) {
                 increase_capacity();
             }
 
             download();
 
-            vec.push_back(val);
+            setup_child_array(val, current_size);
+
+            child_arrays.push_back(val);
+            memcpy(&host_data[current_size*N], val.get_data(), sizeof(U)*N);
             dirty_index(current_size);
             current_size++;
         }
@@ -150,13 +198,13 @@ namespace lmarrow {
         array<U, N>& operator[](std::size_t i) {
 
             download();
-            return vec[i];
+            return child_arrays[i];
         }
 
         array<U, N>& get(std::size_t i) {
 
             download();
-            return vec[i];
+            return child_arrays[i];
         }
 
         void set(std::size_t i, array<U, N> &val) {
@@ -164,7 +212,8 @@ namespace lmarrow {
             setup_child_array(val, i);
 
             download();
-            vec[i] = val;
+            child_arrays[i] = val;
+            memcpy(&host_data[i*N], val.get_data(), sizeof(U)*N);
             dirty_index(i);
         }
 
@@ -173,7 +222,8 @@ namespace lmarrow {
             setup_child_array(val, i);
 
             download();
-            vec[i] = val;
+            child_arrays[i] = val;
+            memcpy(&host_data[i*N], val.get_data(), sizeof(U)*N);
             dirty_index(i);
         }
 
@@ -192,7 +242,7 @@ namespace lmarrow {
             // TODO: copy whole vector in a single cudamemcpy if the number of dirty elements
             //  is very large (ex: more than 50% of all elements)
 
-            std::size_t n_elements_to_copy = std::min(current_size, vec.size()); // only copy elements that are already on host
+            std::size_t n_elements_to_copy = std::min(current_size, child_arrays.size()); // only copy elements that are already on host
 
             // Ensure dev allocation whenever upload is called
             if(dev_realloc) {
@@ -212,17 +262,9 @@ namespace lmarrow {
                 }
 
                 if(host_dirty) {
-                    U *host_data = new U[n_elements_to_copy*N];
-                    for (int i = 0; i < n_elements_to_copy; i++) {
-                        U *src = vec[i].get_data();
-                        U *dst = host_data + i * N;
-                        memcpy(dst, src, N * sizeof(U));
-                    }
 
                     std::size_t _size = sizeof(U) * n_elements_to_copy*N;
-                    cudaMemcpyAsync(get_device_ptr(), host_data, _size, cudaMemcpyHostToDevice, stream);
-
-                    delete[] host_data;
+                    cudaMemcpyAsync(get_device_ptr(), host_data.data(), _size, cudaMemcpyHostToDevice, stream);
                 }
                 else if(host_dirty_elements.size() > 0) {
 
@@ -242,7 +284,7 @@ namespace lmarrow {
 
                         if(dirty_element < n_elements_to_copy) {
                             U *dst = get_device_ptr() + dirty_element * N;
-                            U *src = vec[dirty_element].get_data();
+                            U *src = host_data.data() + dirty_element * N;
                             std::size_t _size = sizeof(U) * N;
                             cudaMemcpyAsync(dst, src, _size, cudaMemcpyHostToDevice, stream);
                         }
@@ -272,28 +314,21 @@ namespace lmarrow {
                 }
                 else {
 
-                    U *host_data = new U[FLAT_CURRENT_SIZE];
                     std::size_t _size = sizeof(U) * FLAT_CURRENT_SIZE;
-                    cudaMemcpyAsync(host_data, get_device_ptr(), _size, cudaMemcpyDeviceToHost, stream);
-
-                    for (int i = 0; i < current_size; i++) {
-                        U *dst = vec[i].get_data();
-                        U *src = host_data + i * N;
-                        memcpy(dst, src, N * sizeof(U));
-                    }
+                    cudaMemcpyAsync(host_data.data(), get_device_ptr(), _size, cudaMemcpyDeviceToHost, stream);
                 }
                 dev_dirty = false;
             }
         }
 
-        U *get_device_ptr() {
+        U* get_device_ptr() {
 
-            return device_shared_ptr.get()->get();
+            return device_data_ptr.get()->get();
         }
 
-        array<U,N> *get_data() {
+        U* get_data() {
 
-            return vec.data();
+            return host_data.data();
         }
 
 
@@ -302,6 +337,7 @@ namespace lmarrow {
 
         void increase_capacity() {
 
+            // TODO: improve this
             reserve(reserved_size + DEFAULT_SIZE);
         }
 
@@ -319,19 +355,25 @@ namespace lmarrow {
 
         void setup_child_array(array<U,N>& arr, std::size_t index) {
 
+            arr.child = true;
+            arr.host_data_parent_ptr = &host_data[index*N];
             arr.parent_index = index;
             arr.parent_dirty_index_callback = [&](std::size_t i) { dirty_index(i); };
+            arr.parent_dirty_on_device_callback = [&]() { dirty_on_device(); };
         }
 
         void allocate_host() {
 
-            std::size_t old_size = vec.size();
-            vec.reserve(reserved_size);
-            vec.resize(current_size);
+            std::size_t old_size = child_arrays.size();
+            child_arrays.reserve(reserved_size);
+            child_arrays.resize(current_size);
+            if(host_data.size() < FLAT_RESERVED_SIZE) {
+                host_data.resize(FLAT_RESERVED_SIZE);
+            }
 
             // TODO: improve this?
             for(int i = old_size; i < current_size; i++) {
-                setup_child_array(vec[i], i);
+                setup_child_array(child_arrays[i], i);
             }
 
             host_realloc = false;
@@ -339,12 +381,13 @@ namespace lmarrow {
 
         void allocate_device() {
 
-            device_shared_ptr = std::make_shared<dev_ptr<U>>( FLAT_RESERVED_SIZE * sizeof(U) );
+            device_data_ptr = std::make_shared<dev_ptr<U>>(FLAT_RESERVED_SIZE * sizeof(U) );
             dev_realloc = false;
         }
 
-        std::vector<array<U,N>> vec;
-        std::shared_ptr<dev_ptr<U>> device_shared_ptr = nullptr;
+        std::vector<array<U,N>> child_arrays;
+        std::vector<U> host_data;
+        std::shared_ptr<dev_ptr<U>> device_data_ptr = nullptr;
 
         std::size_t reserved_size = 0;
         std::size_t current_size = 0;

@@ -10,9 +10,22 @@
 
 namespace lmarrow {
 
+    template<typename T, std::size_t N>
+    class array;
+
     enum sync_granularity {
         FINE = 0,
         COARSE = 1
+    };
+
+    template <typename T>
+    struct collection_data_ptr {
+        using type = T*;
+    };
+
+    template <typename T, std::size_t N>
+    struct collection_data_ptr<array<T, N>> {
+        using type = T*;
     };
 
     template<typename T>
@@ -57,9 +70,9 @@ namespace lmarrow {
 
 
         //protected:
-        virtual T *get_device_ptr() = 0;
+        virtual typename collection_data_ptr<T>::type get_device_ptr() = 0;
 
-        virtual T *get_data() = 0;
+        virtual typename collection_data_ptr<T>::type get_data() = 0;
 
         virtual void upload(cudaStream_t stream = 0) = 0;
 

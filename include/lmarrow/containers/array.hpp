@@ -19,61 +19,91 @@ namespace lmarrow {
     template<typename T, std::size_t N>
     class array : collection<T> {
 
+        friend class vector<lmarrow::array<T, N>>;
+
     public:
 
         array() {
 
             dev_alloc = true;
+            host_alloc = true;
         }
 
         ~array() {
 
-            device_shared_ptr = nullptr;
+            device_data_ptr = nullptr;
         }
 
         void free(cudaStream_t stream = 0) {
 
-            if(device_shared_ptr != nullptr) {
+            if(device_data_ptr != nullptr) {
 
                 if(stream != 0)
-                    device_shared_ptr.get()->freeAsync(stream);
-                device_shared_ptr = nullptr;
+                    device_data_ptr.get()->freeAsync(stream);
+                device_data_ptr = nullptr;
             }
+
+            host_data.clear();
         }
 
         void fill(T &val) {
 
-            std::fill(arr.begin(), arr.end(), val);
+            if (host_alloc)
+                allocate_host();
+
+            if(child) {
+
+                std::fill(host_data_parent_ptr, host_data_parent_ptr+N, val);
+            }
+            else {
+
+                std::fill(host_data.begin(), host_data.end(), val);
+            }
+
             dirty();
         }
 
         void fill(T &&val) {
 
-            std::fill(arr.begin(), arr.end(), val);
+            if (host_alloc)
+                allocate_host();
+
+            if(child) {
+
+                std::fill(host_data_parent_ptr, host_data_parent_ptr+N, val);
+            }
+            else {
+
+                std::fill(host_data.begin(), host_data.end(), val);
+            }
+
             dirty();
         }
 
         void fill_on_device(T &val) {
 
-            upload();
             fill_on_device(value_filler(val));
-            dirty_on_device();
         }
 
         void fill_on_device(T &&val) {
 
-            if(dev_alloc)
-                allocate_device();
-
             fill_on_device(value_filler(val));
-            dirty_on_device();
         }
 
         template<typename Functor>
         void fill(Functor fun) {
 
-            for (int i = 0; i < N; i++)
-                arr[i] = fun(i);
+            if(host_alloc)
+                allocate_host();
+
+            if(child) {
+                for (int i = 0; i < N; i++)
+                    host_data_parent_ptr[i] = fun(i);
+            }
+            else {
+                for (int i = 0; i < N; i++)
+                    host_data[i] = fun(i);
+            }
 
             dirty();
         }
@@ -84,46 +114,72 @@ namespace lmarrow {
             if(dev_alloc)
                 allocate_device();
 
-            dev_fill<<<def_nb(N), def_tpb(N)>>>(get_device_ptr(), N, fun);
+            if(child) {
+                dev_fill<<<def_nb(N), def_tpb(N)>>>(device_data_parent_ptr, N, fun);
+            }
+            else {
+                dev_fill<<<def_nb(N), def_tpb(N)>>>(get_device_ptr(), N, fun);
+            }
+
             dirty_on_device();
         }
 
         T &operator[](std::size_t i) {
 
             download();
-            return arr[i];
+            return child ? host_data_parent_ptr[i] : host_data[i];
         }
 
         T &get(std::size_t i) {
 
             download();
-            return arr[i];
+            return child ? host_data_parent_ptr[i] : host_data[i];
         }
 
         void set(std::size_t i, T &&val) {
 
             download();
-            arr[i] = val;
+            if(child) {
+                host_data_parent_ptr[i] = val;
+            }
+            else {
+                host_data[i] = val;
+            }
             dirty();
         }
 
         void set(std::size_t i, T &val) {
 
             download();
-            arr[i] = val;
+            if(child) {
+                host_data_parent_ptr[i] = val;
+            }
+            else {
+                host_data[i] = val;
+            }
             dirty();
         }
 
         bool contains(T&& val) {
 
             download();
-            return std::find(arr.begin(), arr.end(), val) != arr.end();
+            if(child) {
+                return std::find(host_data_parent_ptr, host_data_parent_ptr+N, val) != host_data_parent_ptr+N;
+            }
+            else {
+                return std::find(host_data.begin(), host_data.end(), val) != host_data.end();
+            }
         }
 
         bool contains(T& val) {
 
             download();
-            return std::find(arr.begin(), arr.end(), val) != arr.end();
+            if(child) {
+                return std::find(host_data_parent_ptr, host_data_parent_ptr+N, val) != host_data_parent_ptr+N;
+            }
+            else {
+                return std::find(host_data.begin(), host_data.end(), val) != host_data.end();
+            }
         }
 
         std::size_t size() { return N; }
@@ -132,7 +188,12 @@ namespace lmarrow {
 
             this->download();
             col.download();
-            memcpy(arr.data(), col.get_data(), sizeof(T) * N);
+            if(child) {
+                memcpy(host_data_parent_ptr, col.get_data(), sizeof(T) * N);
+            }
+            else {
+                memcpy(host_data.data(), col.get_data(), sizeof(T) * N);
+            }
             dirty();
         }
 
@@ -141,34 +202,43 @@ namespace lmarrow {
             this->upload();
             col.upload();
 
-            cudaMemcpy(get_device_ptr(), col.get_device_ptr(), sizeof(T) * N, cudaMemcpyDeviceToDevice);
+            if(child) {
+                cudaMemcpy(device_data_parent_ptr, col.get_device_ptr(), sizeof(T) * N, cudaMemcpyDeviceToDevice);
+            }
+            else {
+                cudaMemcpy(get_device_ptr(), col.get_device_ptr(), sizeof(T) * N, cudaMemcpyDeviceToDevice);
+            }
             dirty_on_device();
         }
 
         void dirty() {
 
+            if(child) {
+                set_parent_dirty();
+            }
             host_dirty = true;
-            set_parent_dirty();
         }
 
         void dirty_on_device() {
 
+            if(child) {
+                set_parent_dirty_on_device();
+            }
             dev_dirty = true;
         }
 
-    //protected:
-        T *get_device_ptr() {
+        T* get_device_ptr() {
 
-            return device_shared_ptr.get()->get();
+            return device_data_ptr.get()->get();
         }
 
-        T *get_data() {
+        T* get_data() {
 
-            if(dev_dirty)
-                download();
-            
-            return arr.data();
+            download();
+            return host_data.data();
         }
+
+        //protected:
 
         void upload(cudaStream_t stream = 0) {
 
@@ -178,20 +248,38 @@ namespace lmarrow {
             }
 
             if (host_dirty) {
-                cudaMemcpyAsync(get_device_ptr(), arr.data(), N * sizeof(T), cudaMemcpyHostToDevice, stream);
+                if(child) {
+                    // TODO: call parent upload? (maybe unnecessary)
+                }
+                else {
+                    if(host_alloc) {
+                        // Shouldn't happen
+                    }
+                    cudaMemcpyAsync(get_device_ptr(), host_data.data(), N * sizeof(T), cudaMemcpyHostToDevice, stream);
+                }
                 host_dirty = false;
             }
         }
 
         void download(cudaStream_t stream = 0) {
 
+            // Ensure host allocation whenever download is called
+            if(host_alloc) {
+                allocate_host();
+            }
+
             if(dev_dirty) {
 
-                if (dev_alloc) {
-                    // Shouldn't happen
+                if(child) {
+                    // TODO: call parent download? (maybe unnecessary)
                 }
                 else {
-                    cudaMemcpyAsync(arr.data(), get_device_ptr(), N * sizeof(T), cudaMemcpyDeviceToHost, stream);
+                    if (dev_alloc) {
+                        // Shouldn't happen
+                    } else {
+                        cudaMemcpyAsync(host_data.data(), get_device_ptr(), N * sizeof(T), cudaMemcpyDeviceToHost,
+                                        stream);
+                    }
                 }
                 dev_dirty = false;
             }
@@ -201,19 +289,39 @@ namespace lmarrow {
 
         void allocate_device() {
 
-            device_shared_ptr = std::make_shared<dev_ptr<T>>( N * sizeof(T) );
+            if(child) {
+                // TODO: call parent allocate_device ? (maybe not necessary)
+            }
+            else{
+                device_data_ptr = std::make_shared<dev_ptr<T>>(N * sizeof(T));
+            }
             dev_alloc = false;
         }
 
+        void allocate_host() {
+
+            if(child) {
+                // TODO: call parent allocate_host ? (maybe not necessary)
+            }
+            else {
+                host_data.resize(N);
+            }
+            host_alloc = false;
+        }
+
+        bool child = false;
         bool dev_alloc = true;
+        bool host_alloc = true;
         bool host_dirty = false;
         bool dev_dirty = false;
 
-        std::array<T, N> arr;
-        std::shared_ptr<dev_ptr<T>> device_shared_ptr = nullptr;
+        T* host_data_parent_ptr = nullptr;
+        std::vector<T> host_data;
+        T* device_data_parent_ptr = nullptr;
+        std::shared_ptr<dev_ptr<T>> device_data_ptr = nullptr;
 
 
-    public:
+    protected:
 
         /* ############################### parent container logic ###################################
          *
@@ -231,8 +339,15 @@ namespace lmarrow {
                 parent_dirty_index_callback(parent_index);
         }
 
+        void set_parent_dirty_on_device() {
+
+            if(parent_dirty_on_device_callback != nullptr)
+                parent_dirty_on_device_callback();
+        }
+
         int parent_index = 0;
         std::function<void(std::size_t)> parent_dirty_index_callback = nullptr;
+        std::function<void(void)> parent_dirty_on_device_callback = nullptr;
     };
 }
 

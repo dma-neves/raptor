@@ -27,13 +27,12 @@ TEST(GVectorOfGarray, Init) {
 
     vec.fill_on_device(flat_fill);
 
-    array<int, N>& a = vec[0];
-    int& b = a[0];
 
-    for(int i = 0; i < 10; i++) {
+    for(int i = 0; i < 1024; i++) {
 
-        for(int j = 0; j < 10; j++)
+        for(int j = 0; j < N; j++) {
             ASSERT_EQ(vec[i][j], flat_fill(i, j));
+        }
     }
 }
 
