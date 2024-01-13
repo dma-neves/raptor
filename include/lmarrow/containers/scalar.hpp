@@ -25,12 +25,12 @@ namespace lmarrow {
             shared_device_ptr = nullptr;
         }
 
-        void set_data(T&& data) {
+        void set(T&& data) {
             host_dirty = true;
             this->val = data;
         }
 
-        T get_data() {
+        T get() {
 
             if(dev_dirty)
                 download();
@@ -39,6 +39,14 @@ namespace lmarrow {
         }
 
     //protected:
+
+        void dirty() {
+            host_dirty = true;
+        }
+
+        void dirty_on_device() {
+            dev_dirty = true;
+        }
 
         void upload(cudaStream_t stream = 0) {
 

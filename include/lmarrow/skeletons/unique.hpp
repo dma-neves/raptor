@@ -28,24 +28,18 @@ namespace lmarrow {
         _unique_col->upload();
         num_selected_out.upload();
 
-        // Allocate temporary device storage
         size_t temp_storage_bytes = 0;
         void* d_temp_storage = nullptr;
 
         cub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes, col.get_device_ptr(),_unique_col->get_device_ptr(), num_selected_out.get_device_ptr(), size);
         cudaMalloc(&d_temp_storage, temp_storage_bytes);
-
-        // Remove duplicates using CUB
         cub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes, col.get_device_ptr(),_unique_col->get_device_ptr(), num_selected_out.get_device_ptr(), size);
 
-        // Free temporary storage
         cudaFree(d_temp_storage);
-
-        //unique_vec.download();
 
         num_selected_out.download();
 
-        ColType<T> result(num_selected_out.get_data());
+        ColType<T> result(num_selected_out.get());
         collection<T>* _result = static_cast<collection<T>*>(&result);
         _result->upload();
 

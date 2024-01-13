@@ -30,7 +30,7 @@ float riemann_sum(int start, int end, int samples) {
     indexes.fill_on_device(counting_sequence_filler<float>());
     vector<float> vals = map<compute_area>(indexes,start, dx);
     scalar<float> result = reduce<sum<float>>(vals);
-    return result.get_data();
+    return result.get();
 }
 
 int main(int argc, char *argv[]) {

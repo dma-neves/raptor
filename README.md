@@ -19,7 +19,6 @@
 * [CMake](https://cmake.org) (v3.24 or greater).
 * Unix based OS.
 
-
 ## Build and Run
 
 ```bash
@@ -54,7 +53,7 @@ float riemann_sum(int start, int end, int samples) {
     indexes.fill(counting_sequence_filler<float>());
     vector<float> vals = map<compute_area>(indexes,start, dx);
     scalar<float> result = reduce<sum<float>>(vals);
-    return result.get_data();
+    return result.get();
 }
 
 int main() {

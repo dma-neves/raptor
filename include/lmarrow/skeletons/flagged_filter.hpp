@@ -18,7 +18,8 @@ namespace lmarrow {
     //typename std::enable_if<std::is_base_of<collection<T>, ColType<T>>::value, ColType<T>>::type // Only enable if ColType inherits from collection<T>
     ColType<T> flagged_filter(ColType<T>& col, vector<int>& flags) {
 
-        auto filtered_vec_size = (std::size_t)reduce<sum<int>>(flags);
+        scalar<int> num_selected_out;
+        auto filtered_vec_size = (std::size_t)reduce<sum<int>>(flags).get();
         ColType<T> filtered_col(filtered_vec_size);
 
         auto* _col = static_cast<collection<T>*>(&col);
@@ -27,8 +28,6 @@ namespace lmarrow {
         _col->upload();
         flags.upload();
         _filtered_col->upload();
-
-        scalar<int> num_selected_out;
         num_selected_out.upload();
 
         // Allocate temporary storage

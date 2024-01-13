@@ -30,12 +30,9 @@ namespace lmarrow {
         void* d_temp_storage = nullptr;
         size_t temp_storage_bytes = 0;
 
-        // Allocate temporary storage
         cub::DeviceScan::InclusiveScan(d_temp_storage, temp_storage_bytes, _col->get_device_ptr(), _result->get_device_ptr(), op, size);
         cudaMalloc(&d_temp_storage, temp_storage_bytes);
-        // Perform inclusive sum scan
         cub::DeviceScan::InclusiveScan(d_temp_storage, temp_storage_bytes, _col->get_device_ptr(), _result->get_device_ptr(), op, size);
-        // Free temporary storage
         cudaFree(d_temp_storage);
 
         _result->dirty_on_device();

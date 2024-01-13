@@ -88,6 +88,7 @@ namespace lmarrow {
 
         void copy(collection<array<U,N>>& col) {
 
+            // TODO
         }
 
         void copy_on_device(collection<array<U,N>>& col) {
@@ -95,24 +96,24 @@ namespace lmarrow {
             // TODO
         }
 
-        void fill(array<U,N>& val) {
+        void fill(U& val) {
 
-            // TODO
+            fill(value_filler_2d<U>(val));
         }
 
-        void fill(array<U,N>&& val) {
+        void fill(U&& val) {
 
-            // TODO
+            fill(value_filler_2d<U>(val));
         }
 
-        void fill_on_device(array<U,N>& val) {
+        void fill_on_device(U& val) {
 
-            // TODO
+            fill(value_filler_2d<U>(val));
         }
 
-        void fill_on_device(array<U,N>&& val) {
+        void fill_on_device(U&& val) {
 
-            // TODO
+            fill(value_filler_2d<U>(val));
         }
 
         template<typename Functor>
@@ -121,10 +122,11 @@ namespace lmarrow {
             if(host_realloc)
                 allocate_host();
 
-            for (int i = 0; i < current_size; i++)
-                for(int j = 0;  j < N; j++) {
-                    host_data[i * N + j] = fun(i,j);
+            for (int i = 0; i < current_size; i++) {
+                for (int j = 0; j < N; j++) {
+                    host_data[i * N + j] = fun(i, j);
                 }
+            }
 
             dirty();
         }
@@ -135,8 +137,7 @@ namespace lmarrow {
             if(dev_realloc)
                 allocate_device();
 
-            dev_fill_flat<<<def_nb(FLAT_CURRENT_SIZE), def_tpb(FLAT_CURRENT_SIZE)>>>(get_device_ptr(), FLAT_CURRENT_SIZE, N, fun);
-            dev_dirty = true;
+            dev_fill_2d<<<def_nb(FLAT_CURRENT_SIZE), def_tpb(FLAT_CURRENT_SIZE)>>>(get_device_ptr(),current_size, N, fun);
 
             dirty_on_device();
         }

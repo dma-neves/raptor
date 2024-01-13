@@ -18,37 +18,38 @@ namespace lmarrow {
         COARSE = 1
     };
 
-    template <typename T>
-    struct collection_data_ptr {
-        using type = T*;
-    };
 
-    template <typename T, std::size_t N>
-    struct collection_data_ptr<array<T, N>> {
-        using type = T*;
-    };
 
     template<typename T>
     class collection {
 
     public:
 
+        template <typename U>
+        struct base_data_type {
+            using type = U;
+        };
+
+        template <typename U, std::size_t N>
+        struct base_data_type<array<U, N>> {
+            using type = U;
+        };
+
         virtual void free(cudaStream_t stream = 0) = 0;
 
-        virtual void fill(T &val) = 0;
+        virtual void fill(typename base_data_type<T>::type &val) = 0;
 
-        virtual void fill(T &&val) = 0;
+        virtual void fill(typename base_data_type<T>::type &&val) = 0;
 
-        virtual void fill_on_device(T &val) = 0;
+        virtual void fill_on_device(typename base_data_type<T>::type &val) = 0;
 
-        virtual void fill_on_device(T &&val) = 0;
+        virtual void fill_on_device(typename base_data_type<T>::type &&val) = 0;
 
+        template<typename Functor>
+        void fill(Functor fun) {} // must be overridden (cpp doesn't allow virtual templated functions)
 
-//        template<typename Functor>
-//        void fill(Functor fun) = 0;
-
-//        template<typename Functor>
-//        void fill_on_device(Functor fun);
+        template<typename Functor>
+        void fill_on_device(Functor fun) {} // must be overridden (cpp doesn't allow virtual templated functions)
 
         virtual T &operator[](std::size_t i) = 0;
 
@@ -68,11 +69,9 @@ namespace lmarrow {
 
         virtual void dirty_on_device() = 0;
 
+        virtual typename base_data_type<T>::type* get_device_ptr() = 0;
 
-        //protected:
-        virtual typename collection_data_ptr<T>::type get_device_ptr() = 0;
-
-        virtual typename collection_data_ptr<T>::type get_data() = 0;
+        virtual typename base_data_type<T>::type* get_data() = 0;
 
         virtual void upload(cudaStream_t stream = 0) = 0;
 

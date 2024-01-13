@@ -27,7 +27,7 @@ float pi_montecarlo_estimation(int size) {
 
     scalar<float> pi = reduce<sum<float>>(mc_results);
 
-    return pi.get_data() / (float)size * 4.f;
+    return pi.get() / (float)size * 4.f;
 }
 
 int main(int argc, char *argv[]) {
