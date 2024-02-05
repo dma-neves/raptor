@@ -4,12 +4,20 @@
 
 - A high-level algorithmic skeleton C++ template library designed to ease the development of parallel programs using CUDA.
 - lmarrow's syntax and core design features are taken from [marrow](https://docentes.fct.unl.pt/p161/software/marrow-skeleton-framework). Simillarly to marrow, lmarrow provides a set of smart containers (`vector`, `array`, `vector<array>`, `scalar`) and skeletons (`map`, `reduce`, `scan`, `filter`) that can be applied over the smart containers. Containers can store the data both on the GPU and CPU, and expose a seamingly unified memory address space. Skeletons are executed on the GPU. The containers are automatically and lazily allocated (if not already allocated) and uploaded to the GPU whenever a skeleton is executed. Similarly to marrow, lmarrow also provides a lmarrow-function primitive, which allows one to specify a generic device function that operates over multiple lmarrow containers of different sizes, primitive data types, and the GPU coordinates (thread ID).
-- Contrary to marrow, lmarrow doesn't support multiple backends, doesn't allow the nesting of multiple skeletons into a single kernel, nor does it automatically track data dependencies and use streams and events to parallelize operations that could be performed asynchronously. In lmarrow, by default, everything is performed using the default stream (stream 0). Non default-streams can be used (not thoroughly tested), but all the synchronization must be ensured by the programmer.
+- Contrary to marrow, lmarrow doesn't support multiple backends, doesn't allow the nesting of multiple skeletons into a single kernel, nor does it automatically track data dependencies and use streams and events to parallelize operations that could be performed asynchronously. In lmarrow, by default, most operations are performed on the default stream (stream 0).
 
 ## Motivation
 
-- lmarrow was developed as a simplified and lighter weight alternative to marrow when using CUDA. For complex applications with many data-dependencies, potential for communication/computation overlap and complex operations over containers, marrow will most likely have better performance. For simpler or more bulk-synchronous-oriented applications, lmarrow can be enough and can take advantage of less runtime overheads.
-- You may note that there already exists a standard high-level parallel algorithms library that tries to achieve some of the same goals as lmarrow: [thrust](https://developer.nvidia.com/thrust). The main differentiating feature of lmarrow is the adoption of a unified address space, where containers ensure the necessary synchronization automatically, and the ability to specify a synchronization granularity. If a coarse granularity is chosen, whenever the container is updated on the host, eventually the whole container is synchronized to the device. If a fine granularity is chosen, only the updated elements of the container are synchronized to the device. This is usefull when dealing with vectors of arrays (supported by lmarrow), where we only want to synchronize single arrays, and not the whole vector.
+- lmarrow was developed as a simplified and lighter weight alternative to marrow specialized for GPU offloading. For complex applications with many data-dependencies, potential for communication/computation overlap and complex operations over containers, marrow will most likely have better performance. For simpler or more bulk-synchronous-oriented applications, lmarrow can be enough and can take advantage of less runtime overheads.
+- You may note that there already exists a standard high-level parallel algorithms library that tries to achieve some of the same goals as lmarrow: [thrust](https://developer.nvidia.com/thrust). The main differentiating features of lmarrow are:
+    - The adoption of a unified address space, where containers ensure the necessary synchronization automatically in a lazy manner.
+    - Multiple container types (`vector`, `array`, `vector<array>`, `scalar`).
+    - Ability to specify a synchronization granularity. If a coarse granularity is chosen, whenever the container is updated on the host, eventually the whole container is synchronized to the device. If a fine granularity is chosen, only the updated elements of the container are synchronized to the device. This is usefull when dealing with vectors of arrays (or heavy objects), where we only want to synchronize the dirty arrays, and not the entire vector.
+    - Powerfull generic function primitive.
+
+## Todo
+- Try using streams when uploading skeleton argument containers
+- Add more tests and examples (`vector<array>`, `function`, `util`)
 
 ## Requirements
 

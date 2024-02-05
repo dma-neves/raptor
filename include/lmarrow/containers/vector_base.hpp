@@ -57,6 +57,13 @@ namespace lmarrow {
                 device_data_ptr = nullptr;
             }
 
+            if(stream_ptr != nullptr) {
+                if(stream_ptr.use_count() == 1) {
+                    cudaStreamDestroy(*stream_ptr);
+                }
+                stream_ptr = nullptr;
+            }
+
             host_data.clear();
 
             host_dirty_elements.clear();
@@ -111,10 +118,16 @@ namespace lmarrow {
 
             if constexpr (std::is_arithmetic_v<T>) {
 
-                if(val == 0)
-                    cudaMemset(get_device_ptr(), 0, sizeof(T)*current_size);
-                else
+                if(val == 0) {
+                    if(stream_ptr == nullptr) {
+                        stream_ptr = std::make_shared<cudaStream_t>();
+                        cudaStreamCreate(stream_ptr.get());
+                    }
+                    cudaMemsetAsync(get_device_ptr(), 0, sizeof(T) * current_size, *stream_ptr);
+                }
+                else {
                     fill_on_device(value_filler(val));
+                }
             }
             else {
                 fill_on_device(value_filler(val));
@@ -129,10 +142,16 @@ namespace lmarrow {
 
             if constexpr (std::is_arithmetic_v<T>) {
 
-                if(val == 0)
-                    cudaMemset(get_device_ptr(), 0, sizeof(T)*current_size);
-                else
+                if(val == 0) {
+                    if(stream_ptr == nullptr) {
+                        stream_ptr = std::make_shared<cudaStream_t>();
+                        cudaStreamCreate(stream_ptr.get());
+                    }
+                    cudaMemsetAsync(get_device_ptr(), 0, sizeof(T) * current_size, *stream_ptr);
+                }
+                else {
                     fill_on_device(value_filler(val));
+                }
             }
             else {
                 fill_on_device(value_filler(val));
@@ -157,7 +176,12 @@ namespace lmarrow {
             if(dev_realloc)
                 allocate_device();
 
-            dev_fill<<<def_nb(current_size), def_tpb(current_size)>>>(get_device_ptr(), current_size, fun);
+            if(stream_ptr == nullptr) {
+                stream_ptr = std::make_shared<cudaStream_t>();
+                cudaStreamCreate(stream_ptr.get());
+            }
+
+            dev_fill<<<def_nb(current_size), def_tpb(current_size), 0, *stream_ptr>>>(get_device_ptr(), current_size, fun);
             dirty_on_device();
         }
 
@@ -266,7 +290,12 @@ namespace lmarrow {
             this->upload();
             col.upload();
 
-            cudaMemcpy(get_device_ptr(), col.get_device_ptr(), sizeof(T) * current_size, cudaMemcpyDeviceToDevice);
+            if(stream_ptr == nullptr) {
+                stream_ptr = std::make_shared<cudaStream_t>();
+                cudaStreamCreate(stream_ptr.get());
+            }
+
+            cudaMemcpyAsync(get_device_ptr(), col.get_device_ptr(), sizeof(T) * current_size, cudaMemcpyDeviceToDevice, *stream_ptr);
             dirty_on_device();
         }
 
@@ -291,6 +320,10 @@ namespace lmarrow {
         }
 
         void upload(cudaStream_t stream = 0) {
+
+//            if(stream_ptr != nullptr) {
+//                cudaStreamSynchronize(*stream_ptr);
+//            }
 
             std::size_t n_elements_to_copy = std::min(current_size, host_data.size()); // only copy elements that are already on host
 
@@ -335,6 +368,10 @@ namespace lmarrow {
         }
 
         void download(cudaStream_t stream = 0) {
+
+            if(stream_ptr != nullptr) {
+                cudaStreamSynchronize(*stream_ptr);
+            }
 
             // Ensure host allocation whenever download is called
             if(host_realloc)
@@ -398,6 +435,8 @@ namespace lmarrow {
         bool host_dirty = false;
         std::set<std::size_t> host_dirty_elements;
         bool dev_dirty = false;
+
+        std::shared_ptr<cudaStream_t> stream_ptr;
     };
 }
 
