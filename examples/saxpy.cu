@@ -26,17 +26,10 @@ int main() {
     vector<float> res = lmarrow::map<saxpy>(x,y,a);
 
     std::cout << "result  : ";
-    for(int i = 0; i < n; i++) {
-
-        std::cout << res[i] << " ";
-    }
+    for(int i = 0; i < n; i++) { std::cout << res[i] << " "; }
     std::cout << std::endl;
 
     std::cout << "expected: ";
-    for(int i = 0; i < n; i++) {
-
-        float expected = (float)i * a + (float)i;
-        std::cout << expected << " ";
-    }
+    for(int i = 0; i < n; i++) { std::cout << ( (float)i * a + (float)i ) << " "; }
     std::cout << std::endl;
 }

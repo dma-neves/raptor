@@ -8,6 +8,7 @@
 
 #include "operators.hpp"
 #include "lmarrow/containers/vector.hpp"
+#include "lmarrow/detail.hpp"
 
 namespace lmarrow {
 
@@ -22,15 +23,9 @@ namespace lmarrow {
         }
     }
 
-    template <typename T, typename = void>
-    struct is_container : std::false_type {};
-
-    template <typename T>
-    struct is_container<T, std::void_t<decltype(std::declval<T>().get_device_ptr())>> : std::true_type {};
-
     template <typename Arg>
     static decltype(auto) forward_device_pointer(Arg& arg) {
-        if constexpr (is_container<Arg>::value) {
+        if constexpr (detail::is_container<Arg>::value) {
             return arg.get_device_ptr();
         }
         else {
@@ -40,13 +35,13 @@ namespace lmarrow {
 
     template <typename Arg>
     void upload_containers(Arg&& arg) {
-        if constexpr (is_container<std::remove_reference_t<Arg>>::value) {
+        if constexpr (detail::is_container<std::remove_reference_t<Arg>>::value) {
             arg.upload();
         }
     }
 
     template <typename T, typename Functor, typename... Args>
-    __global__ void _map(int n, Functor map_fun, T *output, T *first_input, Args... args) {
+    __global__ void map_kernel(int n, Functor map_fun, T *output, T *first_input, Args... args) {
 
         int index = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -70,7 +65,7 @@ namespace lmarrow {
         (upload_containers(args), ...);
         _result->upload();
 
-        _map<<<def_nb(size), def_tpb(size)>>>(size, map_fun, _result->get_device_ptr(), _first_input->get_device_ptr(), forward_device_pointer(args)...);
+        map_kernel<<<def_nb(size), def_tpb(size)>>>(size, map_fun, _result->get_device_ptr(), _first_input->get_device_ptr(), forward_device_pointer(args)...);
         _result->dirty_on_device();
         return result;
     }

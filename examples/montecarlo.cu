@@ -6,10 +6,10 @@
 
 using namespace lmarrow;
 
-struct montecarlo_fun : function_with_coordinates<montecarlo_fun> {
+struct montecarlo_fun : function<montecarlo_fun> {
 
     __device__
-    int operator()(coordinates_t tid, float* result) {
+    void operator()(coordinates_t tid, float* result) {
 
         float x = lmarrow::random::rand(tid);
         float y = lmarrow::random::rand(tid);
@@ -23,7 +23,8 @@ float pi_montecarlo_estimation(int size) {
     montecarlo_fun montecarlo;
 
     vector<float> mc_results(size);
-    montecarlo.apply(size, mc_results);
+    montecarlo.apply(mc_results);
+    mc_results.dirty_on_device();
 
     scalar<float> pi = reduce<sum<float>>(mc_results);
 

@@ -8,10 +8,10 @@
 
 using namespace lmarrow;
 
-struct saxpy_fun_coordinates : function_with_coordinates<saxpy_fun_coordinates> {
+struct saxpy_fun : function<saxpy_fun> {
 
     __device__
-    float operator()(coordinates_t tid, float a, float* x, float* y) {
+    void operator()(coordinates_t tid, float a, float* x, float* y) {
 
         y[tid] = a * x[tid] + y[tid];
     }
@@ -28,8 +28,9 @@ TEST(FunctionTest, SaxpyWithCoordinates) {
     x.fill(4.0f);
     y.fill(3.0f);
 
-    saxpy_fun_coordinates saxpy;
-    saxpy.apply(n, a, x, y);
+    saxpy_fun saxpy;
+    //saxpy.set_size(n);
+    saxpy.apply(a, x, y);
     y.dirty_on_device();
 
     for(int i = 0; i < n; i++) {

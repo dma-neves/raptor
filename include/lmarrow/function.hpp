@@ -8,6 +8,7 @@
 #include <type_traits>
 
 #include "lmarrow/skeletons/map.hpp"
+#include "lmarrow/detail.hpp"
 
 namespace lmarrow {
 
@@ -15,22 +16,42 @@ namespace lmarrow {
 
     template<typename Functor, typename... Args>
     __global__
-    static void kernel_with_coordinates(int nthreads, Functor fun, Args... args) {
+    static void function_kernel(int fun_size, Functor fun, Args... args) {
 
         int tid = threadIdx.x + blockIdx.x * blockDim.x;
-        if(tid < nthreads)
+        if(tid < fun_size)
             fun(tid, args...);
     }
 
     template<typename Functor>
-    struct function_with_coordinates {
+    struct function {
+
+        std::size_t fun_size = 0;
+
+        template <typename Arg>
+        void set_default_size(Arg& arg) {
+            if constexpr (detail::is_collection<Arg>::value) {
+                if(fun_size == 0 || arg.size() < fun_size) {
+                    fun_size = arg.size();
+                }
+            }
+        }
 
         template<typename... Args>
-        void apply(std::size_t nthreads, Args&... args) {
+        void apply(Args&... args) {
+
+            if(fun_size == 0) {
+                (set_default_size(args), ...);
+            }
 
             Functor singleton;
             (upload_containers(args), ...);
-            kernel_with_coordinates<<<def_nb(nthreads), def_tpb(nthreads)>>>(nthreads, singleton, forward_device_pointer(args)...);
+            function_kernel<<<def_nb(fun_size), def_tpb(fun_size)>>>(fun_size, singleton, forward_device_pointer(args)...);
+        }
+
+        void set_size(std::size_t size) {
+
+            fun_size = size;
         }
     };
 }
