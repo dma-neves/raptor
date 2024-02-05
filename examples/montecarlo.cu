@@ -6,7 +6,7 @@
 
 using namespace lmarrow;
 
-struct montecarlo_fun : function<montecarlo_fun> {
+struct montecarlo_fun : function<montecarlo_fun, out<float*>> {
 
     __device__
     void operator()(coordinates_t tid, float* result) {
@@ -24,7 +24,6 @@ float pi_montecarlo_estimation(int size) {
 
     vector<float> mc_results(size);
     montecarlo.apply(mc_results);
-    mc_results.dirty_on_device();
 
     scalar<float> pi = reduce<sum<float>>(mc_results);
 

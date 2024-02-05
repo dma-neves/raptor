@@ -7,8 +7,8 @@
 
 
 #include "operators.hpp"
-#include "lmarrow/containers/vector.hpp"
-#include "lmarrow/detail.hpp"
+#include "lmarrow/containers/collection.hpp"
+#include "lmarrow/function/function.hpp"
 
 namespace lmarrow {
 
@@ -23,49 +23,31 @@ namespace lmarrow {
         }
     }
 
-    template <typename Arg>
-    static decltype(auto) forward_device_pointer(Arg& arg) {
-        if constexpr (detail::is_container<Arg>::value) {
-            return arg.get_device_ptr();
-        }
-        else {
-            return arg;
-        }
-    }
-
-    template <typename Arg>
-    void upload_containers(Arg&& arg) {
-        if constexpr (detail::is_container<std::remove_reference_t<Arg>>::value) {
-            arg.upload();
-        }
-    }
-
     template <typename T, typename Functor, typename... Args>
-    __global__ void map_kernel(int n, Functor map_fun, T *output, T *first_input, Args... args) {
+    __global__ void map_kernel(int n, Functor map_fun, T *output, T *main_collection, Args... args) {
 
-        int index = threadIdx.x + blockIdx.x * blockDim.x;
+        int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-        if(index < n) {
+        if(tid < n) {
 
-            output[index] = map_fun(first_input[index], forward_container_elements(index, args)...);
+            output[tid] = map_fun(main_collection[tid], forward_container_elements(tid, args)...);
         }
     }
 
     template <typename Functor, typename T, template<typename> class ColType, typename... Args>
-    ColType<T> map(ColType<T>& first_input, Args&&... args) {
+    ColType<T> map(ColType<T>& main_collection, Args&&... args) {
 
         Functor map_fun;
-        int size = first_input.size();
+        collection<T>* _main_collection = static_cast<collection<T>*>(&main_collection);
+        int size = _main_collection->size();
         ColType<T> result(size);
-
-        collection<T>* _first_input = static_cast<collection<T>*>(&first_input);
         collection<T>* _result = static_cast<collection<T>*>(&result);
 
-        _first_input->upload();
-        (upload_containers(args), ...);
+        _main_collection->upload();
+        (upload_container<Args>(args), ...);
         _result->upload();
 
-        map_kernel<<<def_nb(size), def_tpb(size)>>>(size, map_fun, _result->get_device_ptr(), _first_input->get_device_ptr(), forward_device_pointer(args)...);
+        map_kernel<<<def_nb(size), def_tpb(size)>>>(size, map_fun, _result->get_device_ptr(), _main_collection->get_device_ptr(), forward_device_pointer(args)...);
         _result->dirty_on_device();
         return result;
     }

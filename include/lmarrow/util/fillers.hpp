@@ -5,7 +5,7 @@
 #ifndef LMARROW_FILLERS_HPP
 #define LMARROW_FILLERS_HPP
 
-#include "lmarrow/function.hpp"
+#include "lmarrow/function/function.hpp"
 
 template <typename T>
 struct counting_sequence_filler {

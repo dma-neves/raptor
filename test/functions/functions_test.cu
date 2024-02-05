@@ -8,7 +8,7 @@
 
 using namespace lmarrow;
 
-struct saxpy_fun : function<saxpy_fun> {
+struct saxpy_fun : function<saxpy_fun, in<float>, in<float*>, inout<float*>> {
 
     __device__
     void operator()(coordinates_t tid, float a, float* x, float* y) {
@@ -29,9 +29,8 @@ TEST(FunctionTest, SaxpyWithCoordinates) {
     y.fill(3.0f);
 
     saxpy_fun saxpy;
-    //saxpy.set_size(n);
+    // saxpy.set_size(n); // optional
     saxpy.apply(a, x, y);
-    y.dirty_on_device();
 
     for(int i = 0; i < n; i++) {
         ASSERT_EQ(y[i], 2.0*4.0+3.0);
