@@ -36,8 +36,9 @@ namespace lmarrow {
 
         void free() {
 
-            if(dptr != nullptr && !async_free)
+            if(dptr != nullptr && !async_free) {
                 cudaFree(dptr);
+            }
         }
 
         void freeAsync(cudaStream_t& stream) {

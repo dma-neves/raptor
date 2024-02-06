@@ -12,7 +12,7 @@ TEST(Scan, PlusScan) {
 
     constexpr int size = 1024;
     vector<int> vec(size);
-    vec.fill_on_device(counting_sequence_filler<int>());
+    vec.fill_on_device(iota_filler<int>());
 
     vector<int> scan_result = lmarrow::scan<sum<int>>(vec);
 
@@ -29,7 +29,7 @@ TEST(Scan, PlusScanSingleElement) {
 
     constexpr int size = 10;
     vector<int> vec(size);
-    vec.fill_on_device(counting_sequence_filler<int>());
+    vec.fill_on_device(iota_filler<int>());
 
     vector<int> scan_result = lmarrow::scan<sum<int>>(vec);
 
@@ -47,7 +47,7 @@ TEST(Scan, MultScan) {
 
     constexpr int size = 1024;
     vector<int> vec(size);
-    vec.fill_on_device(counting_sequence_filler<int>());
+    vec.fill_on_device(iota_filler<int>());
 
     vector<int> scan_result = lmarrow::scan<mult<int>>(vec);
 

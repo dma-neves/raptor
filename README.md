@@ -3,16 +3,17 @@
 ## Description
 
 - A high-level algorithmic skeleton C++ template library designed to ease the development of parallel programs using CUDA.
-- lmarrow's syntax and core design features are taken from [marrow](https://docentes.fct.unl.pt/p161/software/marrow-skeleton-framework). Simillarly to marrow, lmarrow provides a set of smart containers (`vector`, `array`, `vector<array>`, `scalar`) and skeletons (`map`, `reduce`, `scan`, `filter`) that can be applied over the smart containers. Containers can store the data both on the GPU and CPU, and expose a seamingly unified memory address space. Skeletons are executed on the GPU. The containers are automatically and lazily allocated (if not already allocated) and uploaded to the GPU whenever a skeleton is executed. Similarly to marrow, lmarrow also provides a lmarrow-function primitive, which allows one to specify a generic device function that operates over multiple lmarrow containers of different sizes, primitive data types, and the GPU coordinates (thread ID).
+- lmarrow's syntax and core design features are taken from [marrow](https://docentes.fct.unl.pt/p161/software/marrow-skeleton-framework). Simillarly to marrow, lmarrow provides a set of smart containers (`vector`, `array`, `vector<array>`, `scalar`) and skeletons (`map`, `reduce`, `scan`, `filter`) that can be applied over the smart containers. Containers can store the data both on the GPU and CPU, and expose a seamingly unified memory address space. Skeletons are executed on the GPU. The containers are automatically and lazily allocated (if not already allocated) and uploaded to the GPU whenever a skeleton is executed. Similarly to marrow, lmarrow also provides a function primitive, which allows one to specify a generic device function that operates over multiple lmarrow containers of different sizes, primitive data types, and the GPU coordinates (thread ID).
 - Contrary to marrow, lmarrow doesn't support multiple backends, doesn't allow the nesting of multiple skeletons into a single kernel, nor does it automatically track data dependencies and use streams and events to parallelize operations that could be performed asynchronously. In lmarrow, by default, most operations are performed on the default stream (stream 0).
+- Contrary to marrow, lmarrow supports different synchronization granularities. If a coarse granularity is chosen, whenever the container is updated on the host, eventually the whole container is synchronized to the device. If a fine granularity is chosen, only the updated elements of the container are synchronized to the device. This is usefull when dealing with vectors of arrays (or heavy objects), where we only want to synchronize the dirty arrays, and not the entire vector.
 
 ## Motivation
 
-- lmarrow was developed as a simplified and lighter weight alternative to marrow specialized for GPU offloading. For complex applications with many data-dependencies, potential for communication/computation overlap and complex operations over containers, marrow will most likely have better performance. For simpler or more bulk-synchronous-oriented applications, lmarrow can be enough and can take advantage of less runtime overheads.
+- lmarrow was developed as a simplified and lighter weight alternative to marrow specialized for GPU offloading. For complex applications with many data-dependencies, potential for communication/computation overlap, and complex operations over containers, marrow will most likely have better performance. For simpler or more bulk-synchronous-oriented applications, lmarrow can be enough and can take advantage of less runtime overheads and a more concise code base.
 - You may note that there already exists a standard high-level parallel algorithms library that tries to achieve some of the same goals as lmarrow: [thrust](https://developer.nvidia.com/thrust). The main differentiating features of lmarrow are:
     - The adoption of a unified address space, where containers ensure the necessary synchronization automatically in a lazy manner.
     - Multiple container types (`vector`, `array`, `vector<array>`, `scalar`).
-    - Ability to specify a synchronization granularity. If a coarse granularity is chosen, whenever the container is updated on the host, eventually the whole container is synchronized to the device. If a fine granularity is chosen, only the updated elements of the container are synchronized to the device. This is usefull when dealing with vectors of arrays (or heavy objects), where we only want to synchronize the dirty arrays, and not the entire vector.
+    - Ability to specify a synchronization granularity. 
     - Powerfull generic function primitive.
 
 ## Todo
@@ -58,7 +59,7 @@ float riemann_sum(int start, int end, int samples) {
 
     float dx = static_cast<float>(end - start) / static_cast<float>(samples);
     vector<float> indexes(samples);
-    indexes.fill(counting_sequence_filler<float>());
+    indexes.fill(iota_filler<float>());
     vector<float> vals = map<compute_area>(indexes,start, dx);
     scalar<float> result = reduce<sum<float>>(vals);
     return result.get();
@@ -107,7 +108,7 @@ struct mandelbrot_fun {
 vector<int> compute_mandelbrot(int n) {
 
     vector<int> indexes(n*n);
-    indexes.fill(counting_sequence_filler<int>());
+    indexes.fill(iota_filler<int>());
     vector<int> result = map<mandelbrot_fun>(indexes, n, n);
     return result;
 }

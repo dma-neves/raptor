@@ -13,6 +13,14 @@
 namespace lmarrow {
 
     template <typename Arg>
+    void upload_map_container(Arg& arg) {
+
+        if constexpr (detail::is_container<std::remove_reference_t<Arg>>::value) {
+            arg.upload();
+        }
+    }
+
+    template <typename Arg>
     __device__
     static decltype(auto) forward_container_elements(int tid, Arg& arg) {
         if constexpr (std::is_pointer<Arg>::value) {
@@ -44,7 +52,7 @@ namespace lmarrow {
         collection<T>* _result = static_cast<collection<T>*>(&result);
 
         _main_collection->upload();
-        (upload_container<Args>(args), ...);
+        (upload_map_container(args), ...);
         _result->upload();
 
         map_kernel<<<def_nb(size), def_tpb(size)>>>(size, map_fun, _result->get_device_ptr(), _main_collection->get_device_ptr(), forward_device_pointer(args)...);

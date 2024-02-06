@@ -30,7 +30,7 @@ TEST(Map, MapDouble) {
     
     constexpr int size = 1024;
     vector<int> vec(size);
-    vec.fill_on_device(counting_sequence_filler<int>());
+    vec.fill_on_device(iota_filler<int>());
 
     vector<int> map_result = lmarrow::map<DoubleFun>(vec);
 
@@ -46,10 +46,10 @@ TEST(Map, MapSum) {
 
     constexpr int size = 1024;
     vector<int> a(size);
-    a.fill_on_device(counting_sequence_filler<int>());
+    a.fill_on_device(iota_filler<int>());
 
     vector<int> b(size);
-    b.fill_on_device(counting_sequence_filler<int>());
+    b.fill_on_device(iota_filler<int>());
 
     vector<int> map_result = lmarrow::map<SumFun>(a, b);
 

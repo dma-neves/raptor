@@ -8,7 +8,7 @@
 #include "lmarrow/function/function.hpp"
 
 template <typename T>
-struct counting_sequence_filler {
+struct iota_filler {
 
     __device__ __host__
     T operator()(lmarrow::coordinates_t i) {

@@ -20,8 +20,8 @@ int main() {
     vector<float> x(n);
     vector<float> y(n);
 
-    x.fill_on_device(counting_sequence_filler<int>());
-    y.fill_on_device(counting_sequence_filler<int>());
+    x.fill_on_device(iota_filler<int>());
+    y.fill_on_device(iota_filler<int>());
 
     vector<float> res = lmarrow::map<saxpy>(x,y,a);
 

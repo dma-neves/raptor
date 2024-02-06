@@ -17,7 +17,7 @@ struct saxpy_fun : function<saxpy_fun, in<float>, in<float*>, inout<float*>> {
     }
 };
 
-TEST(FunctionTest, SaxpyWithCoordinates) {
+TEST(FunctionTest, SaxpyFunction) {
 
     int n = 10;
 

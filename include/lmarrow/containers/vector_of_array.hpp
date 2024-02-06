@@ -238,7 +238,7 @@ namespace lmarrow {
 
     //protected:
 
-        void upload(cudaStream_t stream = 0) {
+        void upload(cudaStream_t stream = 0, bool ignore_dirty = false) {
 
             // TODO: copy whole vector in a single cudamemcpy if the number of dirty elements
             //  is very large (ex: more than 50% of all elements)
@@ -302,7 +302,7 @@ namespace lmarrow {
             }
         }
 
-        void download(cudaStream_t stream = 0) {
+        void download(cudaStream_t stream = 0, bool ignore_dirty = false) {
 
             // Ensure host allocation whenever download is called
             if(host_realloc)

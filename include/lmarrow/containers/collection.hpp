@@ -73,9 +73,9 @@ namespace lmarrow {
 
         virtual typename base_data_type<T>::type* get_data() = 0;
 
-        virtual void upload(cudaStream_t stream = 0) = 0;
+        virtual void upload(cudaStream_t stream = 0, bool ignore_dirty = false) = 0;
 
-        virtual void download(cudaStream_t stream = 0) = 0;
+        virtual void download(cudaStream_t stream = 0, bool ignore_dirty = false) = 0;
     };
 }
 

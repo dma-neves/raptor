@@ -15,7 +15,7 @@ TEST(Vector, FillOnDevice) {
     constexpr int size = 1024;
 
     vector<int> vec(size);
-    vec.fill_on_device(counting_sequence_filler<int>());
+    vec.fill_on_device(iota_filler<int>());
 
     for(int i = 0; i < size; i++) {
 

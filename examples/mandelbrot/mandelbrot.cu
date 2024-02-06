@@ -52,7 +52,7 @@ struct mandelbrot_fun {
 vector<int> compute_mandelbrot(int n) {
 
     vector<int> indexes(n*n);
-    indexes.fill_on_device(counting_sequence_filler<int>());
+    indexes.fill_on_device(iota_filler<int>());
     vector<int> result = map<mandelbrot_fun>(indexes, n, n);
     return result;
 }

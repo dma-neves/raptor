@@ -36,7 +36,7 @@ TEST(GVectorOfGarray, Init) {
     }
 }
 
-struct check_values_fun : function_with_coordinates<check_values_fun> {
+struct check_values_fun : function<check_values_fun, in<int*>, out<int*>, in<std::size_t>, in<std::size_t>, in<FlatFillFunctor&>> {
 
     __device__
     void operator()(coordinates_t index, int *values, int *results, std::size_t gvec_size, std::size_t garr_size, FlatFillFunctor& fun) {
@@ -81,8 +81,9 @@ TEST(GVectorOfGarray, InitAndUpdate) {
     check_values_fun cv;
     std::size_t gvec_size = 1024;
     std::size_t garr_size = N;
-    cv.apply(results_size, vec, results, gvec_size, garr_size, flat_fill);
-    results.dirty_on_device();
+    cv.set_size(results_size);
+    cv.apply(vec, results, gvec_size, garr_size, flat_fill);
+    //results.dirty_on_device();
     results.download();
 
     for(int i = 0; i < results_size; i++) {

@@ -10,24 +10,24 @@ using namespace lmarrow;
 
 TEST(GArray, InitFillHost) {
 
-    counting_sequence_filler<int> counting_sequence;
+    iota_filler<int> iota;
 
     array<int, 1024> arr;
 
-    arr.fill(counting_sequence);
+    arr.fill(iota);
 
     for(int i = 0 ; i < 10; i++)
-        ASSERT_EQ(arr[i], counting_sequence(i));
+        ASSERT_EQ(arr[i], iota(i));
 }
 
 TEST(GArray, InitFillDevice) {
 
-    counting_sequence_filler<int> counting_sequence;
+    iota_filler<int> iota;
 
     array<int, 1024> arr;
 
-    arr.fill_on_device(counting_sequence);
+    arr.fill_on_device(iota);
 
     for(int i = 0 ; i < 10; i++)
-        ASSERT_EQ(arr[i], counting_sequence(i));
+        ASSERT_EQ(arr[i], iota(i));
 }

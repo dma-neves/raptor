@@ -24,14 +24,6 @@ namespace lmarrow {
         }
     }
 
-    template <typename Arg>
-    void upload_container(Arg& arg) {
-
-        if constexpr (detail::is_container<std::remove_reference_t<Arg>>::value) {
-            arg.upload();
-        }
-    }
-
     template <typename FunctionArg, typename Arg>
     void upload_container(Arg& arg) {
 
@@ -39,8 +31,7 @@ namespace lmarrow {
             arg.upload();
         }
         else if constexpr (detail::is_container<std::remove_reference_t<Arg>>::value) {
-            // TODO: Just allocate device
-            arg.upload();
+            arg.upload(0,true);
         }
     }
 
