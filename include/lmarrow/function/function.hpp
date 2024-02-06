@@ -35,6 +35,14 @@ namespace lmarrow {
         }
     }
 
+    template <typename Arg>
+    void upload_unspecified_container(Arg& arg) {
+
+        if constexpr (detail::is_container<std::remove_reference_t<Arg>>::value) {
+            arg.upload();
+        }
+    }
+
     template <typename FunctionArg, typename Arg>
     void dirty_container(Arg& arg) {
         if constexpr (detail::is_container<std::remove_reference_t<Arg>>::value && detail::is_output<FunctionArg>) {
@@ -74,9 +82,16 @@ namespace lmarrow {
             }
 
             Functor fun;
-            (upload_container<FunctionArgs, Args>(args), ...);
-            function_kernel<<<def_nb(fun_size), def_tpb(fun_size)>>>(fun_size, fun, forward_device_pointer(args)...);
-            (dirty_container<FunctionArgs, Args>(args), ...);
+
+            if constexpr (sizeof...(FunctionArgs) == 0) {
+                (upload_unspecified_container<Args>(args), ...);
+                function_kernel<<<def_nb(fun_size), def_tpb(fun_size)>>>(fun_size, fun, forward_device_pointer(args)...);
+            }
+            else {
+                (upload_container<FunctionArgs, Args>(args), ...);
+                function_kernel<<<def_nb(fun_size), def_tpb(fun_size)>>>(fun_size, fun, forward_device_pointer(args)...);
+                (dirty_container<FunctionArgs, Args>(args), ...);
+            }
         }
 
         void set_size(std::size_t size) {

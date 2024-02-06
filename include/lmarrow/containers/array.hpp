@@ -36,19 +36,29 @@ namespace lmarrow {
 
         void free(cudaStream_t stream = 0) {
 
-            if(stream_initialized) {
-                cudaStreamSynchronize(collection_stream);
-                cudaStreamDestroy(collection_stream);
+            if(stream_ptr != nullptr) {
+                if(stream_ptr.unique()) {
+                    cudaStreamSynchronize(*stream_ptr);
+                    cudaStreamDestroy(*stream_ptr);
+                }
+                stream_ptr.reset();
             }
 
             if(device_data_ptr != nullptr) {
 
                 if(stream != 0)
                     device_data_ptr.get()->freeAsync(stream);
-                device_data_ptr = nullptr;
+                device_data_ptr.reset();
             }
 
-            host_data = nullptr;
+            if(host_data != nullptr) {
+                host_data.reset();
+            }
+
+            dev_alloc = false;
+            host_alloc = false;
+            host_dirty = false;
+            dev_dirty = false;
         }
 
         void fill(T &val) {
@@ -91,7 +101,7 @@ namespace lmarrow {
 
                 if(val == 0) {
                     init_stream();
-                    cudaMemsetAsync(get_device_ptr(), 0, sizeof(T) * N, collection_stream);
+                    cudaMemsetAsync(get_device_ptr(), 0, sizeof(T) * N, *stream_ptr);
                 }
                 else {
                     fill_on_device(value_filler(val));
@@ -111,7 +121,7 @@ namespace lmarrow {
 
                 if(val == 0) {
                     init_stream();
-                    cudaMemsetAsync(get_device_ptr(), 0, sizeof(T) * N, collection_stream);
+                    cudaMemsetAsync(get_device_ptr(), 0, sizeof(T) * N, *stream_ptr);
                 }
                 else {
                     fill_on_device(value_filler(val));
@@ -151,7 +161,7 @@ namespace lmarrow {
             else {
 
                 init_stream();
-                dev_fill<<<def_nb(N), def_tpb(N), 0, collection_stream>>>(get_device_ptr(), N, fun);
+                dev_fill<<<def_nb(N), def_tpb(N), 0, *stream_ptr>>>(get_device_ptr(), N, fun);
             }
 
             dirty_on_device();
@@ -276,8 +286,8 @@ namespace lmarrow {
 
         void upload(cudaStream_t stream = 0, bool ignore_dirty = false) {
 
-            if(stream_initialized) {
-                cudaStreamSynchronize(collection_stream);
+            if(stream_ptr != nullptr) {
+                cudaStreamSynchronize(*stream_ptr);
             }
 
             if(ignore_dirty) {
@@ -305,8 +315,8 @@ namespace lmarrow {
 
         void download(cudaStream_t stream = 0, bool ignore_dirty = false) {
 
-            if(stream_initialized) {
-                cudaStreamSynchronize(collection_stream);
+            if(stream_ptr != nullptr) {
+                cudaStreamSynchronize(*stream_ptr);
             }
 
             if(ignore_dirty) {
@@ -359,9 +369,9 @@ namespace lmarrow {
         }
 
         void init_stream() {
-            if(!stream_initialized) {
-                cudaStreamCreate(&collection_stream);
-                stream_initialized = true;
+            if(stream_ptr == nullptr) {
+                stream_ptr = std::make_shared<cudaStream_t>();
+                cudaStreamCreate(stream_ptr.get());
             }
         }
 
@@ -376,8 +386,7 @@ namespace lmarrow {
         T* device_data_parent_ptr = nullptr;
         std::shared_ptr<dev_ptr<T>> device_data_ptr = nullptr;
 
-        cudaStream_t collection_stream;
-        bool stream_initialized = false;
+        std::shared_ptr<cudaStream_t> stream_ptr;
 
     protected:
 
