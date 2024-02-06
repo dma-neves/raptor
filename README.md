@@ -9,7 +9,7 @@
 
 ## Motivation
 
-- lmarrow was developed as a simplified and lighter weight alternative to marrow specialized for GPU offloading. For complex applications with many data-dependencies, potential for communication/computation overlap, and complex operations over containers, marrow will most likely have better performance. For simpler or more bulk-synchronous-oriented applications, lmarrow can be enough and can take advantage of less runtime overheads and a more concise code base.
+- lmarrow was developed as a simplified and lighter weight alternative to marrow specialized for GPU offloading. For complex applications (many data-dependencies; potential for communication/computation overlap; complex operations over containers), marrow will most likely have better performance. For simpler or more bulk-synchronous-oriented applications, lmarrow can be enough and can take advantage of less runtime overheads and a more concise code base.
 - You may note that there already exists a standard high-level parallel algorithms library that tries to achieve some of the same goals as lmarrow: [thrust](https://developer.nvidia.com/thrust). The main differentiating features of lmarrow are:
     - The adoption of a unified address space, where containers ensure the necessary synchronization automatically in a lazy manner.
     - Multiple container types (`vector`, `array`, `vector<array>`, `scalar`).
