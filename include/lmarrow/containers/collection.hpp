@@ -51,7 +51,7 @@ namespace lmarrow {
         template<typename Functor>
         void fill_on_device(Functor fun) {} // must be overridden (cpp doesn't allow virtual templated functions)
 
-        virtual T &operator[](std::size_t i) = 0;
+        virtual T& operator[](std::size_t i) = 0;
 
         virtual T& get(std::size_t i) = 0;
 

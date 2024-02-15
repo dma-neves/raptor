@@ -31,7 +31,7 @@ TEST(GVectorOfGarray, Init) {
     for(int i = 0; i < 1024; i++) {
 
         for(int j = 0; j < N; j++) {
-            ASSERT_EQ(vec[i][j], flat_fill(i, j));
+            ASSERT_EQ(vec.get(i).get(j), flat_fill(i, j));
         }
     }
 }
@@ -88,6 +88,6 @@ TEST(GVectorOfGarray, InitAndUpdate) {
 
     for(int i = 0; i < results_size; i++) {
 
-        ASSERT_EQ(results[i], 1);
+        ASSERT_EQ(results.get(i), 1);
     }
 }

@@ -225,7 +225,7 @@ namespace lmarrow {
         T &operator[](std::size_t i) {
 
             download();
-            //dirty_index(i);
+            // dirty_index(i);
             return (*host_data)[i];
         }
 

@@ -17,7 +17,7 @@ TEST(GArray, InitFillHost) {
     arr.fill(iota);
 
     for(int i = 0 ; i < 10; i++)
-        ASSERT_EQ(arr[i], iota(i));
+        ASSERT_EQ(arr.get(i), iota(i));
 }
 
 TEST(GArray, InitFillDevice) {
@@ -29,5 +29,5 @@ TEST(GArray, InitFillDevice) {
     arr.fill_on_device(iota);
 
     for(int i = 0 ; i < 10; i++)
-        ASSERT_EQ(arr[i], iota(i));
+        ASSERT_EQ(arr.get(i), iota(i));
 }

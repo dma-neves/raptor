@@ -199,6 +199,7 @@ namespace lmarrow {
         array<U, N>& operator[](std::size_t i) {
 
             download();
+            //dirty_index(i);
             return child_arrays[i];
         }
 

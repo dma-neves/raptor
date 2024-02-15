@@ -7,12 +7,17 @@
 
 #include "lmarrow/function/function.hpp"
 
-template <typename T>
+template <typename T, bool start_at_zero=true>
 struct iota_filler {
 
     __device__ __host__
     T operator()(lmarrow::coordinates_t i) {
-        return (T)i;
+        if constexpr (start_at_zero) {
+            return (T) i;
+        }
+        else {
+            return (T)(i+1);
+        }
     }
 };
 

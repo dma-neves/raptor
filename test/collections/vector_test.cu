@@ -19,7 +19,7 @@ TEST(Vector, FillOnDevice) {
 
     for(int i = 0; i < size; i++) {
 
-        ASSERT_EQ(vec[i], i);
+        ASSERT_EQ(vec.get(i), i);
     }
 }
 
@@ -32,6 +32,6 @@ TEST(Vector, FillOnDeviceVal) {
 
     for(int i = 0; i < size; i++) {
 
-        ASSERT_EQ(vec[i], 42);
+        ASSERT_EQ(vec.get(i), 42);
     }
 }

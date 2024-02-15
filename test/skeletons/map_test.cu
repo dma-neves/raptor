@@ -36,7 +36,7 @@ TEST(Map, MapDouble) {
 
     for(int i = 0; i < size; i++) {
 
-        ASSERT_EQ(map_result[i], vec[i]*2);
+        ASSERT_EQ(map_result.get(i), vec.get(i)*2);
     }
 }
 
@@ -55,6 +55,6 @@ TEST(Map, MapSum) {
 
     for(int i = 0; i < size; i++) {
 
-        ASSERT_EQ(map_result[i], a[i]+b[i]);
+        ASSERT_EQ(map_result.get(i), a.get(i)+b.get(i));
     }
 }

@@ -42,7 +42,7 @@ TEST(FunctionTest, SaxpyFunction) {
     saxpy.apply(a, x, y);
 
     for(int i = 0; i < n; i++) {
-        ASSERT_EQ(y[i], 2.0*4.0+3.0);
+        ASSERT_EQ(y.get(i), 2.0*4.0+3.0);
     }
 }
 
@@ -63,6 +63,6 @@ TEST(FunctionTest, SaxpyFunctionUnspecified) {
     y.dirty_on_device();
 
     for(int i = 0; i < n; i++) {
-        ASSERT_EQ(y[i], 2.0*4.0+3.0);
+        ASSERT_EQ(y.get(i), 2.0*4.0+3.0);
     }
 }

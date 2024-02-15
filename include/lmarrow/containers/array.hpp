@@ -167,13 +167,14 @@ namespace lmarrow {
             dirty_on_device();
         }
 
-        T &operator[](std::size_t i) {
+        T& operator[](std::size_t i) {
 
             download();
+            //dirty_index(i);
             return child ? host_data_parent_ptr[i] : (*host_data)[i];
         }
 
-        T &get(std::size_t i) {
+        T& get(std::size_t i) {
 
             download();
             return child ? host_data_parent_ptr[i] : (*host_data)[i];

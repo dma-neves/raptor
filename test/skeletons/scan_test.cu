@@ -19,9 +19,9 @@ TEST(Scan, PlusScan) {
     int sum = 0;
     for(int i = 0; i < size; i++) {
 
-        sum += vec[i];
+        sum += vec.get(i);
 
-        ASSERT_EQ(scan_result[i], sum);
+        ASSERT_EQ(scan_result.get(i), sum);
     }
 }
 
@@ -37,9 +37,9 @@ TEST(Scan, PlusScanSingleElement) {
     int sum = 0;
     for(int i = 0; i < size; i++) {
 
-        sum += vec[i];
+        sum += vec.get(i);
 
-        ASSERT_EQ(scan_result[i], sum);
+        ASSERT_EQ(scan_result.get(i), sum);
     }
 }
 
@@ -54,8 +54,8 @@ TEST(Scan, MultScan) {
     int mul = 1;
     for(int i = 0; i < size; i++) {
 
-        mul *= vec[i];
+        mul *= vec.get(i);
 
-        ASSERT_EQ(scan_result[i], mul);
+        ASSERT_EQ(scan_result.get(i), mul);
     }
 }
