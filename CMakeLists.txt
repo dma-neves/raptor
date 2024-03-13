@@ -24,7 +24,7 @@ add_library(${LMARROW_LIB} SHARED ${LMARROW_SOURCES})
 
 set_target_properties(lmarrow PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
-add_subdirectory(google_tests)
+add_subdirectory(external/googletest)
 add_subdirectory(test)
 add_subdirectory(examples)
 

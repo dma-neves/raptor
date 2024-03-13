@@ -14,6 +14,7 @@
 #include "collection.hpp"
 #include "array.hpp"
 #include "fill.hpp"
+#include "lmarrow/cuda/error_check.hpp"
 
 #define FLAT_RESERVED_SIZE reserved_size * N
 #define FLAT_CURRENT_SIZE current_size * N
@@ -266,35 +267,29 @@ namespace lmarrow {
                 if(host_dirty) {
 
                     std::size_t _size = sizeof(U) * n_elements_to_copy*N;
-                    cudaMemcpyAsync(get_device_ptr(), host_data.data(), _size, cudaMemcpyHostToDevice, stream);
+                    cudaErrorCheck( cudaMemcpyAsync(get_device_ptr(), host_data.data(), _size, cudaMemcpyHostToDevice, stream) );
                 }
                 else if(host_dirty_elements.size() > 0) {
 
-                    bool default_stream = (stream == 0);
-                    if(default_stream) {
+                    bool using_default_stream = (stream == 0);
+                    if(using_default_stream) {
                         // If default stream is passed, create a new stream to parallelize the mem copies
-                        cudaError_t streamCreationError = cudaStreamCreate(&stream);
-                        if (streamCreationError != cudaSuccess) {
-
-                            std::cerr << "Failed to create stream during upload" << std::endl;
-                            default_stream = false;
-                            stream = 0;
-                        }
+                        cudaErrorCheck( cudaStreamCreate(&stream) );
                     }
 
+                    std::size_t _size = sizeof(U) * N;
                     for (auto dirty_element: host_dirty_elements) {
 
                         if(dirty_element < n_elements_to_copy) {
                             U *dst = get_device_ptr() + dirty_element * N;
                             U *src = host_data.data() + dirty_element * N;
-                            std::size_t _size = sizeof(U) * N;
-                            cudaMemcpyAsync(dst, src, _size, cudaMemcpyHostToDevice, stream);
+                            cudaErrorCheck( cudaMemcpyAsync(dst, src, _size, cudaMemcpyHostToDevice, stream) );
                         }
                     }
 
-                    if(default_stream) {
-                        cudaStreamSynchronize(stream);
-                        cudaStreamDestroy(stream);
+                    if(using_default_stream) {
+                        cudaErrorCheck( cudaStreamSynchronize(stream) );
+                        cudaErrorCheck( cudaStreamDestroy(stream) );
                     }
                 }
 
@@ -317,7 +312,7 @@ namespace lmarrow {
                 else {
 
                     std::size_t _size = sizeof(U) * FLAT_CURRENT_SIZE;
-                    cudaMemcpyAsync(host_data.data(), get_device_ptr(), _size, cudaMemcpyDeviceToHost, stream);
+                    cudaErrorCheck( cudaMemcpyAsync(host_data.data(), get_device_ptr(), _size, cudaMemcpyDeviceToHost, stream) );
                 }
                 dev_dirty = false;
             }

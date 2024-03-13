@@ -5,6 +5,7 @@ set (LMARROW_COLLECTIONS_TEST_SOURCES
         vector_of_array_test.cu
         vector_test.cu
         dev_pointer_test.cu
+        vector_of_array_block_size_performance_test.cu
         )
 
 add_executable(lmarrow_collections_tests ${LMARROW_COLLECTIONS_TEST_SOURCES})
