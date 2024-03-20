@@ -38,10 +38,8 @@ namespace lmarrow {
         vector(std::size_t size, sync_granularity granularity = sync_granularity::COARSE) {
 
             this->granularity = granularity;
-
             reserved_size = size;
             current_size = size;
-
             dev_realloc = true;
             host_realloc = true;
 

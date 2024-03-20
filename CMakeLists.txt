@@ -25,8 +25,8 @@ add_library(${LMARROW_LIB} SHARED ${LMARROW_SOURCES})
 set_target_properties(lmarrow PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 add_subdirectory(external/googletest)
-add_subdirectory(test)
-add_subdirectory(examples)
+#add_subdirectory(test)
+#add_subdirectory(examples)
 
 
 ############# To Parent scope #############
@@ -36,4 +36,7 @@ get_directory_property(hasParent PARENT_DIRECTORY)
 if (hasParent)
     set (LMARROW_INCLUDE_DIRS ${LMARROW_INCLUDE_DIRS} PARENT_SCOPE)
     set (LMARROW_LIB ${LMARROW_LIB} PARENT_SCOPE)
+else()
+    add_subdirectory(test)
+    add_subdirectory(examples)
 endif()
