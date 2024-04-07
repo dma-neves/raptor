@@ -1,11 +1,11 @@
-include_directories(${LMARROW_INCLUDE_DIRS})
+include_directories(${RAPTOR_INCLUDE_DIRS})
 
 find_package(SDL2 REQUIRED)
 
 add_executable(mandelbrot mandelbrot.cu)
 
 target_link_libraries(mandelbrot
-        ${LMARROW_LIB}
+        ${RAPTOR_LIB}
         ${SDL2_LIBRARIES}   # Link SDL2 libraries
         )
 
@@ -15,5 +15,5 @@ target_include_directories(mandelbrot
 
 target_link_libraries(mandelbrot
         #PUBLIC
-        ${LMARROW_LIB}
+        ${RAPTOR_LIB}
         )

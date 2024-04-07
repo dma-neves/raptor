@@ -13,10 +13,12 @@
 - You may note that there already exists a standard high-level parallel algorithms library that tries to achieve some of the same goals as raptor: [thrust](https://developer.nvidia.com/thrust). The main differentiating features of raptor are:
     - The adoption of a unified address space, where containers ensure the necessary synchronization automatically in a lazy manner.
     - Multiple container types (`vector`, `array`, `vector<array>`, `scalar`).
-    - Ability to specify a synchronization granularity (coarse grain - whole container is lazily synchronized, fine grain - only dirty elements are lazily synchronized). 
+    - Ability to specify a synchronization granularity (coarse grain - whole container is lazily synchronized, fine grain - only dirty_host elements are lazily synchronized). 
     - Powerfull generic function primitive.
 
 ## Todo
+- Add lazy copies and fills
+- Make vector\<array\> copies and fills async like in vector_base
 - Try using streams when uploading skeleton argument containers
 - Add more tests and examples (`vector<array>`, `function`, `util`)
 
@@ -58,8 +60,7 @@ struct compute_area {
 float riemann_sum(int start, int end, int samples) {
 
     float dx = static_cast<float>(end - start) / static_cast<float>(samples);
-    vector<float> indexes(samples);
-    indexes.fill(iota_filler<float>());
+    vector<float> indexes = iota<float>(samples);
     vector<float> vals = map<compute_area>(indexes,start, dx);
     scalar<float> result = reduce<sum<float>>(vals);
     return result.get();
@@ -107,8 +108,7 @@ struct mandelbrot_fun {
 
 vector<int> compute_mandelbrot(int n) {
 
-    vector<int> indexes(n*n);
-    indexes.fill(iota_filler<int>());
+    vector<int> indexes = iota<int>(n*n);
     vector<int> result = map<mandelbrot_fun>(indexes, n, n);
     return result;
 }
@@ -119,5 +119,3 @@ int main() {
     render(mandelbrot, DEPTH);
 }
 ```
-
-![alt text](other/mandelbrot.png)

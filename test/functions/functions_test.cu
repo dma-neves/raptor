@@ -2,11 +2,11 @@
 // Created by david on 27-11-2023.
 //
 
-#include "lmarrow/lmarrow.hpp"
+#include "raptor.hpp"
 
 #include <gtest/gtest.h>
 
-using namespace lmarrow;
+using namespace raptor;
 
 struct saxpy_fun : function<saxpy_fun, in<float>, in<float*>, inout<float*>> {
 
@@ -60,7 +60,7 @@ TEST(FunctionTest, SaxpyFunctionUnspecified) {
     saxpy_fun_unspecified saxpy;
     // saxpy.set_size(n); // optional
     saxpy.apply(a, x, y);
-    y.dirty_on_device();
+    y.dirty_device();
 
     for(int i = 0; i < n; i++) {
         ASSERT_EQ(y.get(i), 2.0*4.0+3.0);

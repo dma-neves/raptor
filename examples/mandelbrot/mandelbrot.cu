@@ -2,19 +2,19 @@
 // Created by david on 02-01-2024.
 //
 
-#include "lmarrow/lmarrow.hpp"
+#include "raptor.hpp"
 
 #define DEPTH 1000
 #define TOL 4.0f
 
 #include "mandelbrot_render.hpp"
 
-using namespace lmarrow;
+using namespace raptor;
 
 __device__
-int inline divergence(int depth, lmarrow::math::complex<float> c0) {
+int inline divergence(int depth, raptor::math::complex<float> c0) {
 
-    lmarrow::math::complex<float> c = c0;
+    raptor::math::complex<float> c = c0;
     int i = 0;
 
     while (i < depth && c.dot() < TOL) {
@@ -42,7 +42,7 @@ struct mandelbrot_fun {
         float x = (float)(index % height);
         float y = (float)(index / height);
 
-        lmarrow::math::complex<float> c0(center_x + (x / (float)width) * scale_x ,
+        raptor::math::complex<float> c0(center_x + (x / (float)width) * scale_x ,
                                          center_y + (y / (float)height) * scale_y);
 
         return divergence(DEPTH, c0);
@@ -51,8 +51,7 @@ struct mandelbrot_fun {
 
 vector<int> compute_mandelbrot(int n) {
 
-    vector<int> indexes(n*n);
-    indexes.fill_on_device(iota_filler<int>());
+    vector<int> indexes = iota<int>(n*n);
     vector<int> result = map<mandelbrot_fun>(indexes, n, n);
     return result;
 }

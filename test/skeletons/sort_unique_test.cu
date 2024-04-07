@@ -4,10 +4,10 @@
 
 #include <gtest/gtest.h>
 
-#include "lmarrow/skeletons/unique.hpp"
-#include "lmarrow/skeletons/radix_sort.hpp"
+#include "raptor/skeletons/unique.hpp"
+#include "raptor/skeletons/radix_sort.hpp"
 
-using namespace lmarrow;
+using namespace raptor;
 
 TEST(Unique, SmallVec) {
 
@@ -24,9 +24,10 @@ TEST(Unique, SmallVec) {
     vec.push_back(1);
 
 
-    vector<int> sorted_vec = lmarrow::radix_sort(vec);
+    vector<int> sorted_vec = raptor::radix_sort(vec);
     sorted_vec[0];
-    vector<int> unique_vec = lmarrow::unique(sorted_vec);
+    vector<int> unique_vec = raptor::unique(sorted_vec);
+    unique_vec.download();
 
     ASSERT_EQ(unique_vec.size(), 6);
     ASSERT_TRUE(unique_vec.contains(1));

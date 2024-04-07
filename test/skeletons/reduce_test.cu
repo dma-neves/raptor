@@ -4,9 +4,9 @@
 
 #include <gtest/gtest.h>
 
-#include "lmarrow/lmarrow.hpp"
+#include "raptor.hpp"
 
-using namespace lmarrow;
+using namespace raptor;
 
 
 TEST(Reduce, ReducePlus) {
@@ -16,7 +16,7 @@ TEST(Reduce, ReducePlus) {
     vector<int> vec(size);
     vec.fill_on_device(iota_filler<int>());
 
-    scalar<int> reduce_result = lmarrow::reduce<sum<int>>(vec);
+    scalar<int> reduce_result = raptor::reduce<sum<int>>(vec);
     int expected_result = last_number * (last_number+1) / 2;
     ASSERT_EQ(reduce_result.get(), expected_result);
 }

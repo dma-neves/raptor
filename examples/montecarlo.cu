@@ -2,17 +2,17 @@
 // Created by david on 02-01-2024.
 //
 
-#include "lmarrow/lmarrow.hpp"
+#include "raptor.hpp"
 
-using namespace lmarrow;
+using namespace raptor;
 
 struct montecarlo_fun : function<montecarlo_fun, out<float*>> {
 
     __device__
     void operator()(coordinates_t tid, float* result) {
 
-        float x = lmarrow::random::rand(tid);
-        float y = lmarrow::random::rand(tid);
+        float x = raptor::random::rand(tid);
+        float y = raptor::random::rand(tid);
 
         result[tid] = (x * x + y * y) < 1;
     }

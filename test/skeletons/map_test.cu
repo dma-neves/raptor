@@ -2,11 +2,11 @@
 // Created by david on 15-10-2023.
 //
 
-#include "lmarrow/lmarrow.hpp"
+#include "raptor.hpp"
 
 #include <gtest/gtest.h>
 
-using namespace lmarrow;
+using namespace raptor;
 
 struct DoubleFun {
 
@@ -32,7 +32,7 @@ TEST(Map, MapDouble) {
     vector<int> vec(size);
     vec.fill_on_device(iota_filler<int>());
 
-    vector<int> map_result = lmarrow::map<DoubleFun>(vec);
+    vector<int> map_result = raptor::map<DoubleFun>(vec);
 
     for(int i = 0; i < size; i++) {
 
@@ -42,8 +42,6 @@ TEST(Map, MapDouble) {
 
 TEST(Map, MapSum) {
 
-    SumFun sum_fun;
-
     constexpr int size = 1024;
     vector<int> a(size);
     a.fill_on_device(iota_filler<int>());
@@ -51,7 +49,7 @@ TEST(Map, MapSum) {
     vector<int> b(size);
     b.fill_on_device(iota_filler<int>());
 
-    vector<int> map_result = lmarrow::map<SumFun>(a, b);
+    vector<int> map_result = raptor::map<SumFun>(a, b);
 
     for(int i = 0; i < size; i++) {
 

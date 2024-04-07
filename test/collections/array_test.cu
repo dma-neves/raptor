@@ -4,11 +4,11 @@
 
 #include <gtest/gtest.h>
 
-#include "lmarrow/lmarrow.hpp"
+#include "raptor.hpp"
 
-using namespace lmarrow;
+using namespace raptor;
 
-TEST(GArray, InitFillHost) {
+TEST(ArrayTest, InitFillHost) {
 
     iota_filler<int> iota;
 
@@ -20,7 +20,7 @@ TEST(GArray, InitFillHost) {
         ASSERT_EQ(arr.get(i), iota(i));
 }
 
-TEST(GArray, InitFillDevice) {
+TEST(ArrayTest, InitFillDevice) {
 
     iota_filler<int> iota;
 

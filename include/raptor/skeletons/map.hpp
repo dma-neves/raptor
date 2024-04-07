@@ -1,0 +1,56 @@
+//
+// Created by david on 15-10-2023.
+//
+
+#ifndef RAPTOR_MAP_HPP
+#define RAPTOR_MAP_HPP
+
+
+#include "operators.hpp"
+#include "raptor/containers/collection.hpp"
+#include "raptor/function/function.hpp"
+
+namespace raptor {
+
+    template <typename Arg>
+    __device__
+    static decltype(auto) forward_container_elements(int tid, Arg& arg) {
+        if constexpr (std::is_pointer<Arg>::value) {
+            return arg[tid];
+        }
+        else {
+            return arg;
+        }
+    }
+
+    template <typename T, typename Functor, typename... Args>
+    __global__ void map_kernel(int n, Functor map_fun, T *output, T *main_collection, Args... args) {
+
+        int tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+        if(tid < n) {
+
+            output[tid] = map_fun(main_collection[tid], forward_container_elements(tid, args)...);
+        }
+    }
+
+    template <typename Functor, typename T, template<typename> class ColType, typename... Args>
+    ColType<T> map(ColType<T>& main_collection, Args&&... args) {
+
+        Functor map_fun;
+        collection<T>* _main_collection = static_cast<collection<T>*>(&main_collection);
+        int size = _main_collection->size();
+        ColType<T> result(size);
+        collection<T>* _result = static_cast<collection<T>*>(&result);
+
+        _main_collection->upload();
+        (upload_unspecified_container(args), ...);
+        _result->upload();
+
+        map_kernel<<<def_nb(size), def_tpb(size)>>>(size, map_fun, _result->get_device_data(), _main_collection->get_device_data(), forward_device_pointer(args)...);
+        _result->dirty_device();
+        return result;
+    }
+}
+
+#endif //RAPTOR_MAP_HPP

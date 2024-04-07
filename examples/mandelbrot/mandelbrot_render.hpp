@@ -2,16 +2,16 @@
 // Created by david on 02-01-2024.
 //
 
-#ifndef LMARROW_MANDELBROT_RENDER_HPP
-#define LMARROW_MANDELBROT_RENDER_HPP
+#ifndef RAPTOR_MANDELBROT_RENDER_HPP
+#define RAPTOR_MANDELBROT_RENDER_HPP
 
 #include <SDL.h>
 #include <cmath>
 
-#include "lmarrow/lmarrow.hpp"
+#include "raptor.hpp"
 
 
-using namespace lmarrow;
+using namespace raptor;
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 800;
@@ -60,4 +60,4 @@ void render(vector<int>& data, int max) {
     SDL_Quit();
 }
 
-#endif //LMARROW_MANDELBROT_RENDER_HPP
+#endif //RAPTOR_MANDELBROT_RENDER_HPP

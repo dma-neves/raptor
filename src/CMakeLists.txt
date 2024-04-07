@@ -1,4 +1,4 @@
-set (LMARROW_SOURCES
+set (RAPTOR_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/main.cu
         PARENT_SCOPE
         )

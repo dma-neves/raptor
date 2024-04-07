@@ -1,30 +1,31 @@
 
 cmake_minimum_required(VERSION 3.24)
-project(lmarrow LANGUAGES CUDA CXX)
+project(raptor LANGUAGES CUDA CXX)
 
 set(CMAKE_CUDA_STANDARD 17)
 
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
-set (LMARROW_LIB lmarrow)
+set (RAPTOR_LIB raptor)
 
-set(LMARROW_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(RAPTOR_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
 file(GLOB SUBDIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/include/*)
 foreach(SUBDIRECTORY ${SUBDIRECTORIES})
     if(IS_DIRECTORY ${SUBDIRECTORY})
-        list(APPEND LMARROW_INCLUDE_DIRS ${SUBDIRECTORY})
+        list(APPEND RAPTOR_INCLUDE_DIRS ${SUBDIRECTORY})
     endif()
 endforeach()
-include_directories(${LMARROW_INCLUDE_DIRS})
+include_directories(${RAPTOR_INCLUDE_DIRS})
 
 add_subdirectory(src)
 
-add_library(${LMARROW_LIB} SHARED ${LMARROW_SOURCES})
+add_library(${RAPTOR_LIB} SHARED ${RAPTOR_SOURCES} include/raptor/util/generators.h)
 
-set_target_properties(lmarrow PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(raptor PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 add_subdirectory(external/googletest)
+
 #add_subdirectory(test)
 #add_subdirectory(examples)
 
@@ -34,8 +35,8 @@ add_subdirectory(external/googletest)
 get_directory_property(hasParent PARENT_DIRECTORY)
 
 if (hasParent)
-    set (LMARROW_INCLUDE_DIRS ${LMARROW_INCLUDE_DIRS} PARENT_SCOPE)
-    set (LMARROW_LIB ${LMARROW_LIB} PARENT_SCOPE)
+    set (RAPTOR_INCLUDE_DIRS ${RAPTOR_INCLUDE_DIRS} PARENT_SCOPE)
+    set (RAPTOR_LIB ${RAPTOR_LIB} PARENT_SCOPE)
 else()
     add_subdirectory(test)
     add_subdirectory(examples)

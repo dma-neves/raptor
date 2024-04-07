@@ -4,17 +4,17 @@
 
 #include <gtest/gtest.h>
 
-#include "lmarrow/lmarrow.hpp"
+#include "raptor.hpp"
 
-using namespace lmarrow;
+using namespace raptor;
 
-TEST(DevPointer, DevPointerDestruct) {
+TEST(DevPointerTest, DevPointerTestDestruct) {
 
     int* dev_ptr = nullptr;
     {
         vector<int> vec(1024);
         vec.fill_on_device(2);
-        dev_ptr = vec.get_device_ptr();
+        dev_ptr = vec.get_device_data();
     }
 
     cudaPointerAttributes attributes;
@@ -22,14 +22,14 @@ TEST(DevPointer, DevPointerDestruct) {
     ASSERT_EQ(attributes.devicePointer, nullptr);
 }
 
-TEST(DevPointer, DevPointerCopyConstructor) {
+TEST(DevPointerTest, DevPointerTestCopyConstructor) {
 
     int* dev_ptr = nullptr;
     vector<int> vec_copy;
     {
         vector<int> vec(1024);
         vec.fill_on_device(2);
-        dev_ptr = vec.get_device_ptr();
+        dev_ptr = vec.get_device_data();
 
         vec_copy = vec;
     }

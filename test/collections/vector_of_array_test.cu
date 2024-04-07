@@ -4,11 +4,11 @@
 
 #include <gtest/gtest.h>
 
-#include "lmarrow/lmarrow.hpp"
+#include "raptor.hpp"
 
 #define N 512
 
-using namespace lmarrow;
+using namespace raptor;
 
 struct FlatFillFunctor {
 
@@ -19,13 +19,13 @@ struct FlatFillFunctor {
 };
 
 
-TEST(GVectorOfGarray, Init) {
+TEST(VectorOfArrayTest, Init) {
 
     FlatFillFunctor flat_fill;
 
     vector<array<int, N>> vec(1024);
 
-    vec.fill_on_device(flat_fill);
+    vec.fill<DEVICE>(flat_fill);
 
 
     for(int i = 0; i < 1024; i++) {
@@ -61,7 +61,7 @@ struct check_values_fun : function<check_values_fun, in<int*>, out<int*>, in<std
     }
 };
 
-TEST(GVectorOfGarray, InitAndUpdate) {
+TEST(VectorOfArrayTest, InitAndUpdate) {
 
     FlatFillFunctor flat_fill;
 
@@ -83,8 +83,6 @@ TEST(GVectorOfGarray, InitAndUpdate) {
     std::size_t garr_size = N;
     cv.set_size(results_size);
     cv.apply(vec, results, gvec_size, garr_size, flat_fill);
-    //results.dirty_on_device();
-    results.download();
 
     for(int i = 0; i < results_size; i++) {
 

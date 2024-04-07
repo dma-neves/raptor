@@ -1,6 +1,6 @@
-#include "lmarrow/lmarrow.hpp"
+#include "raptor.hpp"
 
-using namespace lmarrow;
+using namespace raptor;
 
 struct saxpy {
 
@@ -17,13 +17,11 @@ int main() {
 	int n = 10;
 
     float a = 2.0f;
-    vector<float> x(n);
-    vector<float> y(n);
 
-    x.fill_on_device(iota_filler<int>());
-    y.fill_on_device(iota_filler<int>());
+    vector<float> x = iota<float>(n);
+    vector<float> y = iota<float>(n);
 
-    vector<float> res = lmarrow::map<saxpy>(x,y,a);
+    vector<float> res = raptor::map<saxpy>(x,y,a);
 
     std::cout << "result  : ";
     for(int i = 0; i < n; i++) { std::cout << res[i] << " "; }

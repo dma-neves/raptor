@@ -5,9 +5,9 @@
 #include <gtest/gtest.h>
 #include <chrono> // Added for timing
 
-#include "lmarrow/lmarrow.hpp"
+#include "raptor.hpp"
 
-using namespace lmarrow;
+using namespace raptor;
 
 #define block_size_16 16 / sizeof(int)
 #define block_size_32 32 / sizeof(int)

@@ -2,9 +2,9 @@
 // Created by david on 05-01-2024.
 //
 
-#include "lmarrow.hpp"
+#include "raptor.hpp"
 
-using namespace lmarrow;
+using namespace raptor;
 
 __device__
 static float fun(float x) {
@@ -26,8 +26,7 @@ struct compute_area {
 float riemann_sum(int start, int end, int samples) {
 
     float dx = static_cast<float>(end - start) / static_cast<float>(samples);
-    vector<float> indexes(samples);
-    indexes.fill_on_device(iota_filler<float>());
+    vector<float> indexes = iota<float>(samples);
     vector<float> vals = map<compute_area>(indexes,start, dx);
     scalar<float> result = reduce<sum<float>>(vals);
     return result.get();

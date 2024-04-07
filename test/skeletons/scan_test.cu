@@ -4,9 +4,9 @@
 
 #include <gtest/gtest.h>
 
-#include "lmarrow/lmarrow.hpp"
+#include "raptor.hpp"
 
-using namespace lmarrow;
+using namespace raptor;
 
 TEST(Scan, PlusScan) {
 
@@ -14,7 +14,7 @@ TEST(Scan, PlusScan) {
     vector<int> vec(size);
     vec.fill_on_device(iota_filler<int>());
 
-    vector<int> scan_result = lmarrow::scan<sum<int>>(vec);
+    vector<int> scan_result = raptor::scan<sum<int>>(vec);
 
     int sum = 0;
     for(int i = 0; i < size; i++) {
@@ -31,7 +31,7 @@ TEST(Scan, PlusScanSingleElement) {
     vector<int> vec(size);
     vec.fill_on_device(iota_filler<int>());
 
-    vector<int> scan_result = lmarrow::scan<sum<int>>(vec);
+    vector<int> scan_result = raptor::scan<sum<int>>(vec);
 
 
     int sum = 0;
@@ -49,7 +49,7 @@ TEST(Scan, MultScan) {
     vector<int> vec(size);
     vec.fill_on_device(iota_filler<int>());
 
-    vector<int> scan_result = lmarrow::scan<mult<int>>(vec);
+    vector<int> scan_result = raptor::scan<mult<int>>(vec);
 
     int mul = 1;
     for(int i = 0; i < size; i++) {
