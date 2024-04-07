@@ -6,14 +6,14 @@
 ## Description
 
 - A high-level algorithmic skeleton C++ template library designed to ease the development of parallel programs using CUDA.
-- Raptor's syntax and core design features are taken from [marrow](https://docentes.fct.unl.pt/p161/software/marrow-skeleton-framework). Simillarly to marrow, raptor provides a set of smart containers (`vector`, `array`, `vector<array>`, `scalar`) and skeletons (`map`, `reduce`, `scan`, `filter`) that can be applied over the smart containers. Containers can store the data both on the host and device, and expose a seamingly unified memory address space. Skeletons are executed on the device, and the ontainers are automatically and lazily allocated (if not already allocated) and uploaded to the device whenever a skeleton is executed. Similarly to marrow, raptor also provides a function primitive, which allows one to specify a generic device function that operates over multiple raptor containers of different sizes, primitive data types, and the GPU coordinates.
+- Raptor's syntax and core design features are taken from [marrow](https://docentes.fct.unl.pt/p161/software/marrow-skeleton-framework). Simillarly to marrow, raptor provides a set of smart containers (`vector`, `array`, `vector<array>`, `scalar`) and skeletons (`map`, `reduce`, `scan`, `filter`) that can be applied over the smart containers. Containers can store the data both on the host and device, and expose a seamingly unified memory address space. Skeletons are executed on the device, and the containers are automatically and lazily allocated (if not already allocated) and uploaded to the device whenever a skeleton is executed. Similarly to marrow, raptor also provides a generic function primitive. A raptor function allows one to specify a generic device function that can operate over multiple raptor containers of different sizes, primitive data types, and the GPU coordinates.
 ## Motivation
 
 - Raptor was developed as a simplified and lighter weight alternative to marrow (when using a CUDA backend). For complex irregular applications (many data-dependencies; potential for communication/computation overlap; nested operations over containers), marrow can acheive better performance. For more regular and bulk-synchronous applications, raptor can take advantage of a minimal runtime.
 - You may note that there already exists a standard high-level parallel algorithms library that tries to achieve some of the same goals as raptor: [thrust](https://developer.nvidia.com/thrust). The main differentiating features of raptor are:
     - The adoption of a unified address space, where containers ensure the necessary synchronization automatically in a lazy manner.
     - Multiple container types (`vector`, `array`, `vector<array>`, `scalar`).
-    - Ability to specify a synchronization granularity (coarse grain - whole container is lazily synchronized, fine grain - only dirty_host elements are lazily synchronized). 
+    - Ability to specify a synchronization granularity (coarse grain - whole container is lazily synchronized, fine grain - only dirty elements are lazily synchronized). 
     - Powerfull generic function primitive.
 
 ## Todo
@@ -40,7 +40,7 @@ make
 examples/riemann_sum 0 10 1000000
 ```
 
-## Riemann Sum Example
+## Example: Riemann Sum
 
 ```c++
 __device__
@@ -71,51 +71,32 @@ int main() {
 }
 ```
 
-## Mandelbrot Example
+## Example: Montecarlo
 
 ```c++
-__device__
-int inline divergence(int depth, raptor::math::complex<float> c0) {
-
-    raptor::math::complex<float> c = c0;
-    int i = 0;
-    while (i < depth && c.dot() < TOL) {
-        c = c0 + (c * c);
-        i++;
-    }
-    return i;
-}
-
-struct mandelbrot_fun {
-
-    static constexpr float center_x = -1.5f;
-    static constexpr float center_y = -1.5f;
-    static constexpr float scale_x = 3.f;
-    static constexpr float scale_y = 3.f;
+struct montecarlo_fun : function<montecarlo_fun, out<float*>> {
 
     __device__
-    int operator()(int index, int width, int height) const {
+    void operator()(coordinates_t tid, float* result) {
 
-        float x = (float)(index % height);
-        float y = (float)(index / height);
+        float x = raptor::random::rand(tid);
+        float y = raptor::random::rand(tid);
 
-        raptor::math::complex<float> c0(center_x + (x / (float)width) * scale_x ,
-                                         center_y + (y / (float)height) * scale_y);
-
-        return divergence(DEPTH, c0);
+        result[tid] = (x * x + y * y) < 1;
     }
 };
 
-vector<int> compute_mandelbrot(int n) {
+float pi_montecarlo_estimation(int size) {
 
-    vector<int> indexes = iota<int>(n*n);
-    vector<int> result = map<mandelbrot_fun>(indexes, n, n);
-    return result;
+    montecarlo_fun montecarlo;
+    vector<float> mc_results(size);
+    montecarlo.apply(mc_results);
+    scalar<float> pi = reduce<sum<float>>(mc_results);
+    return pi.get() / (float)size * 4.f;
 }
 
 int main() {
 
-    vector<int> mandelbrot = compute_mandelbrot(1000);
-    render(mandelbrot, DEPTH);
+    float pi = pi_montecarlo_estimation(1000000);
 }
 ```
