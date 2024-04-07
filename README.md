@@ -60,9 +60,9 @@ struct compute_area {
 float riemann_sum(int start, int end, int samples) {
 
     float dx = static_cast<float>(end - start) / static_cast<float>(samples);
-    vector<float> indexes = iota<float>(samples);
-    vector<float> vals = map<compute_area>(indexes,start, dx);
-    scalar<float> result = reduce<sum<float>>(vals);
+    raptor::vector<float> indexes = raptor::iota<float>(samples);
+    raptor::vector<float> vals = raptor::map<compute_area>(indexes,start, dx);
+    raptor::scalar<float> result = raptor::reduce<sum<float>>(vals);
     return result.get();
 }
 
@@ -74,7 +74,7 @@ int main() {
 ## Example: Montecarlo
 
 ```c++
-struct montecarlo_fun : function<montecarlo_fun, out<float*>> {
+struct montecarlo_fun : raptor::function<montecarlo_fun, out<float*>> {
 
     __device__
     void operator()(coordinates_t tid, float* result) {
@@ -89,9 +89,10 @@ struct montecarlo_fun : function<montecarlo_fun, out<float*>> {
 float pi_montecarlo_estimation(int size) {
 
     montecarlo_fun montecarlo;
-    vector<float> mc_results(size);
+    // montecarl.set_size(size); /*optional*/
+    raptor::vector<float> mc_results(size);
     montecarlo.apply(mc_results);
-    scalar<float> pi = reduce<sum<float>>(mc_results);
+    raptor::scalar<float> pi = raptor::reduce<sum<float>>(mc_results);
     return pi.get() / (float)size * 4.f;
 }
 
