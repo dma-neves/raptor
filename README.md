@@ -37,7 +37,7 @@ git clone --recursive git@github.com:dma-neves/raptor.git
 cd raptor
 mkdir build
 cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 examples/riemann_sum 0 10 1000000
 ```
