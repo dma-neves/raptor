@@ -33,6 +33,8 @@
 ## Build and Run
 
 ```bash
+git clone --recursive git@github.com:dma-neves/raptor.git
+cd raptor
 mkdir build
 cd build
 cmake ..
