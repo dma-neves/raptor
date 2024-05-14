@@ -13,8 +13,7 @@ TEST(Reduce, ReducePlus) {
 
     constexpr int size = 1024;
     constexpr int last_number = size-1;
-    vector<int> vec(size);
-    vec.fill_on_device(iota_filler<int>());
+    vector<int> vec = iota<int>(size);
 
     scalar<int> reduce_result = raptor::reduce<sum<int>>(vec);
     int expected_result = last_number * (last_number+1) / 2;

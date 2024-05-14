@@ -1,4 +1,4 @@
-add_subdirectory(mandelbrot)
+# add_subdirectory(mandelbrot) # uncomment to include mandelbrot example (requires SDL2 for rendering)
 
 include_directories(${RAPTOR_INCLUDE_DIRS})
 
